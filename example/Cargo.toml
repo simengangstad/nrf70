@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nrf70 = { path = ".." }
+nrf70 = { path = "..", features = ["defmt"]}
 embassy-executor = { version = "0.7.0", features = [
     "defmt",
     "arch-cortex-m",
@@ -15,7 +15,6 @@ embassy-time = { version = "0.4.0", features = [
     "defmt",
     "defmt-timestamp-uptime",
 ] }
-embassy-sync = { version = "0.6.2" }
 embassy-nrf = { version = "0.3.1", features = [
     "defmt",
     "nrf5340-app-s",

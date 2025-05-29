@@ -5304,10 +5304,15 @@ pub struct nrf_wifi_cmd_ps_exit_strategy {
     #[doc = " Power save exit strategy"]
     pub ps_exit_strategy: ::core::ffi::c_uchar,
 }
-pub type wchar_t = ::core::ffi::c_int;
-pub type max_align_t = f64;
-pub type __gnuc_va_list = __builtin_va_list;
-pub type va_list = __builtin_va_list;
+pub type wchar_t = ::core::ffi::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct max_align_t {
+    pub __clang_max_align_nonce1: ::core::ffi::c_longlong,
+    pub __clang_max_align_nonce2: f64,
+}
+pub type __gnuc_va_list = u32;
+pub type va_list = u32;
 #[repr(i32)]
 #[doc = " @brief The status of an operation performed by the RPU driver."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -6779,7 +6784,6 @@ pub enum nrf_wifi_fw_subtype {
     NRF_WIFI_FW_SUBTYPE_SEC = 1,
     NRF_WIFI_FW_SUBTYPE_MAX = 2,
 }
-pub type __builtin_va_list = *mut ::core::ffi::c_char;
 #[doc = " Frame context information."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

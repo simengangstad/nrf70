@@ -10,7 +10,7 @@ use core::ptr;
 use action::{Action, ActionState};
 use bindings::*;
 use bus::Bus;
-use embassy_futures::select::{select4, Either4};
+use embassy_futures::select::{select3, select4, Either3, Either4};
 use embassy_net_driver_channel as ch;
 use embassy_time::{Duration, Timer};
 use embedded_hal::digital::{InputPin, OutputPin};
@@ -210,7 +210,6 @@ impl<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> Runner<'a, BUS, IN, OUT>
             let action = self.action_state.wait_pending();
             let wifi_tx = self.ch.tx_buf();
             let irq_event = self.host_irq.wait_for_high();
-            let event = self.rpu.wait_for_event(&mut buffer);
 
             // Need select here for control
             //
@@ -219,8 +218,8 @@ impl<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> Runner<'a, BUS, IN, OUT>
             // Wait for TX buffer from ch (on runner). This is the net layer
             // This is basically the entrypoint for sending packets
 
-            match select4(action, wifi_tx, irq_event, event).await {
-                Either4::First(action) => {
+            match select3(action, wifi_tx, irq_event).await {
+                Either3::First(action) => {
                     debug!("Action: {:?}", action);
 
                     match action {
@@ -240,10 +239,10 @@ impl<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> Runner<'a, BUS, IN, OUT>
                         }
                     };
                 }
-                Either4::Second(packet) => {
+                Either3::Second(packet) => {
                     debug!("tx pkt {:02x}", Bytes(&packet[..packet.len().min(48)]));
                 }
-                Either4::Third(irq) => {
+                Either3::Third(irq) => {
                     debug!("Got IRQ");
 
                     match irq {
@@ -253,11 +252,8 @@ impl<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> Runner<'a, BUS, IN, OUT>
                         Err(_) => continue,
                     }
 
-                    if self.rpu.irq_watchdog_check().await {
-                        self.rpu.irq_watchdog_ack().await;
-                    }
-                }
-                Either4::Fourth(event) => {
+                    let event = self.rpu.wait_for_event(&mut buffer).await;
+
                     if let Ok(message) = event {
                         let buf = slice8(&buffer);
 
@@ -309,6 +305,10 @@ impl<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> Runner<'a, BUS, IN, OUT>
                             warn!("unknown event type {:08x}", meh(message.type_));
                         }
                     }
+
+                    if self.rpu.irq_watchdog_check().await {
+                        self.rpu.irq_watchdog_ack().await;
+                    }
                 }
             }
         }
@@ -318,13 +318,6 @@ impl<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> Runner<'a, BUS, IN, OUT>
         let firmware_info = FirmwareInfo::read(firmware)?;
 
         self.rpu.boot(&firmware_info).await?;
-
-        let version = self.rpu.firmware_version().await;
-
-        info!(
-            "Firmware for RPU ({}.{}.{}.{}) booted sucessfully",
-            version.version, version.major, version.minor, version.extra
-        );
 
         Ok(())
     }

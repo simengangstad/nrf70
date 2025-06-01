@@ -1,4 +1,8 @@
-use core::{fmt, mem::zeroed};
+use core::{
+    fmt,
+    mem::{self, zeroed},
+    slice::from_raw_parts,
+};
 
 use embassy_time::Timer;
 
@@ -7,7 +11,7 @@ use crate::{
     bus::Bus,
     remap_global_addr_to_region_and_offset,
     rpu::{MAX_TX_AGGREGATION, RX_BUFS_PER_QUEUE, RX_MAX_DATA_SIZE},
-    util::slice32,
+    util::{slice32, sliceit},
     Error,
 };
 
@@ -240,7 +244,7 @@ impl<BUS: Bus> Rpu<BUS> {
         }
     }
 
-    pub(super) async fn firmware_initialize(&mut self) -> Result<(), Error> {
+    pub(super) async fn firmware_initialize(&mut self, rf_parameters: &nrf_wifi_phy_rf_params) -> Result<(), Error> {
         let init_command = nrf_wifi_cmd_sys_init {
             sys_head: unsafe { zeroed() },
             wdev_id: 0,
@@ -252,21 +256,21 @@ impl<BUS: Bus> Rpu<BUS> {
                 calib_sleep_clk: CALIB_SLEEP_CLOCK_ENABLE,
                 phy_calib: NRF_WIFI_DEF_PHY_CALIB,
                 mac_addr: [0; 6],
-                rf_params: [0; 200],
-                rf_params_valid: 0,
+                rf_params: unsafe { mem::transmute(*rf_parameters) },
+                rf_params_valid: 1,
             },
             rx_buf_pools: [
                 rx_buf_pool_params {
                     buf_sz: RX_MAX_DATA_SIZE as _, // TODO is this including the header or not?
-                    num_bufs: RX_BUFS_PER_QUEUE as _,
+                    num_bufs: 4 as _,
                 },
                 rx_buf_pool_params {
                     buf_sz: RX_MAX_DATA_SIZE as _, // TODO is this including the header or not?
-                    num_bufs: RX_BUFS_PER_QUEUE as _,
+                    num_bufs: 4 as _,
                 },
                 rx_buf_pool_params {
                     buf_sz: RX_MAX_DATA_SIZE as _, // TODO is this including the header or not?
-                    num_bufs: RX_BUFS_PER_QUEUE as _,
+                    num_bufs: 4 as _,
                 },
             ],
             data_config_params: nrf_wifi_data_config_params {
@@ -291,7 +295,7 @@ impl<BUS: Bus> Rpu<BUS> {
                 vbat_threshold: 0,
             },
             country_code: [0, 0],
-            op_band: 0,
+            op_band: op_band::BAND_ALL as u32, // TODO: should be configuration
             tcp_ip_checksum_offload: 0,
             mgmt_buff_offload: 0,
             feature_flags: 0,
@@ -299,12 +303,12 @@ impl<BUS: Bus> Rpu<BUS> {
             disable_beamforming: 0,
             discon_timeout: 20,
             display_scan_bss_limit: 150,
-            ps_exit_strategy: 1,
-            watchdog_timer_val: 50,
+            ps_exit_strategy: ps_exit_strategy::EVERY_TIM as u8,
+            watchdog_timer_val: 0xFFFFFF, // TODO: enable watchdog timer
             keep_alive_enable: 1,
             keep_alive_period: 60,
             max_ps_poll_fail_cnt: 10,
-            raw_scan_enable: 1,
+            raw_scan_enable: 0,
             stbc_enable_in_ht: 0,
         };
 

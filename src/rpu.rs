@@ -12,19 +12,47 @@ const MAX_TX_TOKENS: usize = 10;
 const MAX_TX_AGGREGATION: usize = 6;
 const TX_MAX_DATA_SIZE: usize = 1600;
 const RX_MAX_DATA_SIZE: u16 = 1600;
-const RX_BUFS_PER_QUEUE: u16 = 16;
+const RX_BUFS_PER_QUEUE: u16 = 5;
 
 // Fixed
 const TX_BUFS: usize = MAX_TX_TOKENS * MAX_TX_AGGREGATION;
 const TX_BUF_SIZE: usize = TX_BUF_HEADROOM as usize + TX_MAX_DATA_SIZE;
 const TX_TOTAL_SIZE: usize = TX_BUFS * TX_BUF_SIZE;
-// const RX_BUFS: usize = RX_BUFS_PER_QUEUE * MAX_NUM_OF_RX_QUEUES as usize;
+const RX_BUFS: usize = (RX_BUFS_PER_QUEUE as usize) * (MAX_NUM_OF_RX_QUEUES as usize);
 const RX_BUF_SIZE: usize = RX_BUF_HEADROOM as usize + RX_MAX_DATA_SIZE as usize;
-// const RX_TOTAL_SIZE: usize = RX_BUFS * RX_BUF_SIZE;
+const RX_TOTAL_SIZE: usize = RX_BUFS * RX_BUF_SIZE;
 
 // TODO: should be a config with a range
 // const NRF70_RX_NUM_BUFS: u32 = 48;
 // const NRF70_RX_MAX_DATA_SIZE: u32 = 1600;
+
+// #define MAX_TX_FRAME_SIZE \
+// 	(CONFIG_NRF_WIFI_IFACE_MTU + NRF_WIFI_FMAC_ETH_HDR_LEN + TX_BUF_HEADROOM)
+// #define TOTAL_TX_SIZE \
+// 	(CONFIG_NRF70_MAX_TX_TOKENS * CONFIG_NRF70_TX_MAX_DATA_SIZE)
+// #define TOTAL_RX_SIZE \
+// 	(CONFIG_NRF70_RX_NUM_BUFS * CONFIG_NRF70_RX_MAX_DATA_SIZE)
+
+// config NRF70_RX_NUM_BUFS
+// 	int "Number of RX buffers"
+// 	default 48
+//
+// config NRF70_MAX_TX_AGGREGATION
+// 	int "Maximum number of TX packets to aggregate"
+// 	default 12
+//
+// config NRF70_MAX_TX_TOKENS
+// 	int "Maximum number of TX tokens"
+// 	range 5 12 if !NRF70_RADIO_TEST
+// 	default 10
+//
+// config NRF70_TX_MAX_DATA_SIZE
+// 	int "Maximum size of TX data"
+// 	default 1600
+//
+// config NRF70_RX_MAX_DATA_SIZE
+// 	int "Maximum size of RX data"
+// 	default 1600
 
 pub(crate) mod commands;
 pub(crate) mod firmware;
@@ -78,6 +106,16 @@ impl<BUS: Bus> Rpu<BUS> {
         self.firmware_load(firmware_info).await;
         self.firmware_boot().await;
 
+        let version = self.firmware_version().await;
+
+        info!(
+            "Firmware for RPU ({}.{}.{}.{}) booted sucessfully",
+            version.version, version.major, version.minor, version.extra
+        );
+
+        // Done in Zephyr sample FW, maybe not necessary
+        self.wake_up().await?;
+
         // -- Retrieve HPQM information ---
 
         // Read the host port queue info for all the queues provided by the RPU (like command, event, RX buffer queues etc)
@@ -114,15 +152,17 @@ impl<BUS: Bus> Rpu<BUS> {
             max_pwr_5g_high_mcs7: 13 * 4,
         };
 
-        // TODO: write these
-        let mut rf_parameters = self.get_rf_parameters(&otp_info, otp_flags, &tx_pwr_ceil_params).await;
+        let rf_parameters = self.get_rf_parameters(&otp_info, otp_flags, &tx_pwr_ceil_params).await;
 
         // -- Initialize RX queues ---
 
         for queue_index in 0..(MAX_NUM_OF_RX_QUEUES as usize) {
             for buffer_index in 0..RX_BUFS_PER_QUEUE {
                 let descriptor_identifier = queue_index * (RX_BUFS_PER_QUEUE as usize) + buffer_index as usize;
-                let rpu_addr = RPU_MEM_PKT_BASE + (TX_TOTAL_SIZE + RX_BUF_SIZE * descriptor_identifier) as u32;
+
+                // TODO: Is this correct?
+                let rpu_addr = (RPU_MEM_PKT_BASE + RPU_PKTRAM_SIZE - RX_TOTAL_SIZE as u32)
+                    + (RX_BUF_SIZE * descriptor_identifier) as u32;
 
                 // Write RX buffer header
                 self.write_u32(rpu_addr, None, descriptor_identifier as u32).await;
@@ -138,10 +178,31 @@ impl<BUS: Bus> Rpu<BUS> {
 
         // --- Initialize the firmware ---
 
-        self.firmware_initialize().await?;
+        self.firmware_initialize(&rf_parameters).await?;
 
-        let result = self.read_u32_from_region(SYSBUS, 0x0C0).await;
-        info!("PART: {}", result);
+        // TODO: after init, set MAC address
+        // --- Check MAC address ---
+
+        let mac_address = [
+            (otp_info.mac_address0[0]) as u8,
+            (otp_info.mac_address0[0] >> 8) as u8,
+            (otp_info.mac_address0[0] >> 16) as u8,
+            0x0,
+            (otp_info.mac_address0[1]) as u8,
+            (otp_info.mac_address0[1] >> 8) as u8,
+        ];
+
+        info!(
+            "MAC address: {:#x}:{:#x}:{:#x}:{:#x}:{:#x}:{:#x}",
+            mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]
+        );
+
+        // TODO: Send command
+
+        // TODO: bring interface up: nrf_wifi_fmac_chg_vif_state and wait for event
+
+        // let result = self.read_u32_from_region(SYSBUS, 0x0C0).await;
+        // info!("PART: {}", result);
 
         Ok(())
     }

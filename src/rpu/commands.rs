@@ -101,34 +101,6 @@ impl_cmd!(
     nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_INTERFACE
 );
 
-// impl Default for nrf_wifi_umac_cmd_add_vif {
-//     fn default() -> Self {
-//         nrf_wifi_umac_cmd_add_vif {
-//             umac_hdr: nrf_wifi_umac_hdr {
-//                 cmd_evnt: nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_INTERFACE as u32,
-//                 ids: nrf_wifi_index_ids {
-//                     valid_fields: NRF_WIFI_INDEX_IDS_WDEV_ID_VALID,
-//                     ifaceindex: 0,
-//                     nrf_wifi_wiphy_idx: 0,
-//                     // TODO: 0 is the default. Only need to send this for wdev_id != 0
-//                     wdev_id: 1,
-//                 },
-//                 portid: 0,
-//                 seq: 0,
-//                 rpu_ret_val: 0,
-//             },
-//             valid_fields: 0,
-//             info: nrf_wifi_umac_add_vif_info {
-//     iftype: 0,
-//     nrf_wifi_use_4addr: ,
-//     mon_flags: ,
-//     mac_addr: ,
-//     ifacename:,
-//             },
-//         }
-//     }
-// }
-
 impl_cmd!(
     umac,
     nrf_wifi_umac_cmd_change_macaddr,
@@ -296,7 +268,7 @@ impl<BUS: Bus> Rpu<BUS> {
             }
         };
 
-        debug!("Writing to {:#x}", message_address);
+        debug!("Writing command to {:#x}", message_address);
 
         // Write the message to the suggested address
         self.write_buffer(message_address, None, slice32(message)).await;
@@ -348,57 +320,4 @@ impl<BUS: Bus> Rpu<BUS> {
 
         Ok(())
     }
-
-    // pub(crate) async fn nrf_wifi_fmac_rx_cmd_send<'a, BUS>(
-    //     bus: &mut BUS,
-    //     hal_info: &nrf_wifi_hal_info,
-    //     rx_buffer: &mut RxBuffer<'a>,
-    //     command_type: nrf_wifi_fmac_rx_cmd_type,
-    // ) -> Result<(), NrfWifiError>
-    // where
-    //     BUS: Bus,
-    // {
-    //     // let buffer_length = umac_context.rx_buf_pools[pool_info.pool_id as usize].buf_sz as u32 + RX_BUF_HEADROOM;
-    //
-    //     match command_type {
-    //         nrf_wifi_fmac_rx_cmd_type::NRF_WIFI_FMAC_RX_CMD_TYPE_INIT => {
-    //             if rx_buffer.mapped {
-    //                 return Err(NrfWifiError::RxBufferAlreadyMapped);
-    //             }
-    //
-    //             let address = hal_info.rx_cmd_base + RPU_DATA_CMD_SIZE_MAX_RX * rx_buffer.descriptor_identifier;
-    //             let host_address = (address & RPU_ADDR_MASK_OFFSET) | RPU_MCU_CORE_INDIRECT_BASE;
-    //
-    //             let command = host_rpu_rx_buf_info {
-    //                 addr: rx_buffer.data.as_ptr().cast::<()>() as u32,
-    //             };
-    //
-    //             // Write
-    //             bus_write_u32(bus, host_address, None, command.addr).await;
-    //
-    //             // Post
-    //             bus_write_u32(bus, hal_info.hpqm_info.cmd_busy_queue.enqueue_addr, None, address).await;
-    //         }
-    //         nrf_wifi_fmac_rx_cmd_type::NRF_WIFI_FMAC_RX_CMD_TYPE_DEINIT => {}
-    //         nrf_wifi_fmac_rx_cmd_type::NRF_WIFI_FMAC_RX_CMD_TYPE_MAX => {}
-    //     }
-    //
-    //     Ok(())
-    //
-    //     // let addr_base = hal_info.rx_cmd_base;
-    //     // let max_cmd_size = RPU_DATA_CMD_SIZE_MAX_RX;
-    //     //
-    //     // let addr = addr_base + max_cmd_size * desc_id;
-    //     // let host_addr = addr & RPU_ADDR_MASK_OFFSET | RPU_MCU_CORE_INDIRECT_BASE;
-    //     //
-    //     // // Write the command to the core
-    //     // self.rpu_write_core(host_addr, command, ProcessorType::LMAC).await; // LMAC is a guess here
-    //     //
-    //     // // Post the updated information to the RPU
-    //     // self.rpu_hpq_enqueue(
-    //     //     self.rpu_info.as_ref().unwrap().hpqm_info.rx_buf_busy_queue[pool_id],
-    //     //     addr,
-    //     // )
-    //     // .await;
-    // }
 }

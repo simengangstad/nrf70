@@ -5,8 +5,8 @@ use embassy_time::{Duration, Timer};
 use crate::{
     action::Action,
     bindings::{
-        nrf_wifi_cmd_get_stats, nrf_wifi_sys_umac_event_stats, nrf_wifi_umac_cmd_abort_scan,
-        nrf_wifi_umac_cmd_get_scan_results, nrf_wifi_umac_cmd_scan,
+        nrf_wifi_cmd_get_stats, nrf_wifi_sys_umac_event_stats, nrf_wifi_umac_cmd_get_scan_results,
+        nrf_wifi_umac_cmd_scan,
     },
     rpu::commands::Command,
     util::sliceit,

@@ -1,26 +1,55 @@
-use core::cmp::min;
-
-use embassy_time::{Duration, Instant, Timer};
+use embassy_time::{Duration, Timer};
 use firmware::FirmwareInfo;
 
-use crate::{
-    bindings::*, bus::Bus, util::slice32_mut, Error, PBUS, SR1_RPU_AWAKE, SR1_RPU_READY, SR2_RPU_WAKEUP_REQ, SYSBUS,
-};
+use crate::{bindings::*, bus::Bus, util::slice32_mut, Error, PBUS, SR1_RPU_AWAKE, SR1_RPU_READY, SR2_RPU_WAKEUP_REQ};
+
+/*
+pktram: 0xB0000000 - 0xB0030FFF -- 196kb
+usable for mcu-rpu comms: 0xB0005000 - 0xB0030FFF -- 176kb
+
+First we allocate N tx buffers, which consist of
+- Header of 52 bytes
+- Data of N bytes
+
+Then we allocate rx buffers.
+- 3 queues of
+  - N buffers each, which consist of
+    - Header of 4 bytes
+    - Data of N bytes (default 1600)
+
+Each RX buffer has a "descriptor ID" which is assigned across all queues starting from 0
+- queue 0 is descriptors 0..N-1
+- queue 1 is descriptors N..2N-1
+- queue 2 is descriptors 2N..3N-1
+*/
 
 // Configurable by user
-const MAX_TX_TOKENS: usize = 10;
+// const MAX_TX_TOKENS: usize = 10;
+
 const MAX_TX_AGGREGATION: usize = 6;
-const TX_MAX_DATA_SIZE: usize = 1600;
+// const TX_MAX_DATA_SIZE: usize = 1600;
 const RX_MAX_DATA_SIZE: u16 = 1600;
 const RX_BUFS_PER_QUEUE: u16 = 5;
 
 // Fixed
+
+/*
 const TX_BUFS: usize = MAX_TX_TOKENS * MAX_TX_AGGREGATION;
 const TX_BUF_SIZE: usize = TX_BUF_HEADROOM as usize + TX_MAX_DATA_SIZE;
 const TX_TOTAL_SIZE: usize = TX_BUFS * TX_BUF_SIZE;
+*/
+
 const RX_BUFS: usize = (RX_BUFS_PER_QUEUE as usize) * (MAX_NUM_OF_RX_QUEUES as usize);
 const RX_BUF_SIZE: usize = RX_BUF_HEADROOM as usize + RX_MAX_DATA_SIZE as usize;
 const RX_TOTAL_SIZE: usize = RX_BUFS * RX_BUF_SIZE;
+
+//     // assert!(MAX_TX_TOKENS >= 1, "At least one TX token is required");
+//     // assert!(MAX_TX_AGGREGATION <= 16, "Max TX aggregation is 16");
+//     // assert!(RX_BUFS_PER_QUEUE >= 1, "At least one RX buffer per queue is required");
+//     // assert!(
+//     //     (TX_TOTAL_SIZE + RX_TOTAL_SIZE) as u32 <= RPU_PKTRAM_SIZE,
+//     //     "Packet RAM overflow"
+//     // );
 
 // TODO: should be a config with a range
 // const NRF70_RX_NUM_BUFS: u32 = 48;
@@ -180,6 +209,8 @@ impl<BUS: Bus> Rpu<BUS> {
 
         self.firmware_initialize(&rf_parameters).await?;
 
+        // Wait for event init done
+
         // TODO: after init, set MAC address
         // --- Check MAC address ---
 
@@ -230,7 +261,7 @@ impl<BUS: Bus> Rpu<BUS> {
                 Some(event_address) => event_address,
             };
 
-            debug!("event address: {:#x}", event_address);
+            debug!("Got event. Address: {:#x}", event_address);
 
             return self.read_event(event_address, buffer).await;
         }

@@ -1,12 +1,11 @@
 use core::cell::{Cell, RefCell};
-use core::future::{poll_fn, Future, Pending};
+use core::future::{poll_fn, Future};
 use core::ptr;
 use core::task::{Poll, Waker};
 
 use embassy_sync::waitqueue::WakerRegistration;
 
 use crate::bindings::nrf_wifi_host_rpu_msg_type;
-use crate::control::ScanOptions;
 use crate::Error;
 
 #[derive(Clone, Copy, Debug)]
@@ -42,6 +41,7 @@ pub struct ActionState {
     wakers: RefCell<Wakers>,
 }
 
+#[allow(dead_code)]
 impl ActionState {
     pub const fn new() -> Self {
         Self {

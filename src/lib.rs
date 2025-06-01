@@ -5,12 +5,10 @@
 
 pub(crate) mod fmt;
 
-use core::ptr;
-
 use action::{Action, ActionState};
 use bindings::*;
 use bus::Bus;
-use embassy_futures::select::{select3, select4, Either3, Either4};
+use embassy_futures::select::{select3, Either3};
 use embassy_net_driver_channel as ch;
 use embassy_time::{Duration, Timer};
 use embedded_hal::digital::{InputPin, OutputPin};
@@ -32,57 +30,10 @@ mod bindings;
 
 const MTU: usize = 1514;
 
-const SR0_WRITE_IN_PROGRESS: u8 = 0x01;
+// const SR0_WRITE_IN_PROGRESS: u8 = 0x01;
 const SR1_RPU_AWAKE: u8 = 0x02;
 const SR1_RPU_READY: u8 = 0x04;
 const SR2_RPU_WAKEUP_REQ: u8 = 0x01;
-
-// ========= config
-/*
-pktram: 0xB0000000 - 0xB0030FFF -- 196kb
-usable for mcu-rpu comms: 0xB0005000 - 0xB0030FFF -- 176kb
-
-First we allocate N tx buffers, which consist of
-- Header of 52 bytes
-- Data of N bytes
-
-Then we allocate rx buffers.
-- 3 queues of
-  - N buffers each, which consist of
-    - Header of 4 bytes
-    - Data of N bytes (default 1600)
-
-Each RX buffer has a "descriptor ID" which is assigned across all queues starting from 0
-- queue 0 is descriptors 0..N-1
-- queue 1 is descriptors N..2N-1
-- queue 2 is descriptors 2N..3N-1
-*/
-
-const _: () = {
-    const MAX_TX_TOKENS: usize = 10;
-    const MAX_TX_AGGREGATION: usize = 6;
-    const TX_MAX_DATA_SIZE: usize = 1600;
-    const RX_MAX_DATA_SIZE: usize = 1600;
-    const RX_BUFS_PER_QUEUE: usize = 16;
-
-    // // configurable by user
-
-    const TX_BUFS: usize = MAX_TX_TOKENS * MAX_TX_AGGREGATION;
-    const TX_BUF_SIZE: usize = TX_BUF_HEADROOM as usize + TX_MAX_DATA_SIZE;
-    const TX_TOTAL_SIZE: usize = TX_BUFS * TX_BUF_SIZE;
-
-    const RX_BUFS: usize = RX_BUFS_PER_QUEUE * MAX_NUM_OF_RX_QUEUES as usize;
-    const RX_BUF_SIZE: usize = RX_BUF_HEADROOM as usize + RX_MAX_DATA_SIZE;
-    const RX_TOTAL_SIZE: usize = RX_BUFS * RX_BUF_SIZE;
-
-    // assert!(MAX_TX_TOKENS >= 1, "At least one TX token is required");
-    // assert!(MAX_TX_AGGREGATION <= 16, "Max TX aggregation is 16");
-    // assert!(RX_BUFS_PER_QUEUE >= 1, "At least one RX buffer per queue is required");
-    // assert!(
-    //     (TX_TOTAL_SIZE + RX_TOTAL_SIZE) as u32 <= RPU_PKTRAM_SIZE,
-    //     "Packet RAM overflow"
-    // );
-};
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -117,6 +68,7 @@ impl State {
     }
 }
 
+#[allow(dead_code)]
 pub struct Control<'a> {
     action_state: &'a ActionState,
     state_ch: ch::StateRunner<'a>,
@@ -124,6 +76,7 @@ pub struct Control<'a> {
 
 pub type NetDriver<'a> = ch::Device<'a, MTU>;
 
+#[allow(dead_code)]
 pub struct Runner<'a, BUS: Bus, IN: InputPin + Wait, OUT: OutputPin> {
     ch: ch::Runner<'a, MTU>,
     state_ch: ch::StateRunner<'a>,

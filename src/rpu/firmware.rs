@@ -1,7 +1,6 @@
 use core::{
     fmt,
     mem::{self, zeroed},
-    slice::from_raw_parts,
 };
 
 use embassy_time::Timer;
@@ -10,8 +9,8 @@ use crate::{
     bindings::*,
     bus::Bus,
     remap_global_addr_to_region_and_offset,
-    rpu::{MAX_TX_AGGREGATION, RX_BUFS_PER_QUEUE, RX_MAX_DATA_SIZE},
-    util::{slice32, sliceit},
+    rpu::{MAX_TX_AGGREGATION, RX_MAX_DATA_SIZE},
+    util::slice32,
     Error,
 };
 
@@ -304,7 +303,7 @@ impl<BUS: Bus> Rpu<BUS> {
             discon_timeout: 20,
             display_scan_bss_limit: 150,
             ps_exit_strategy: ps_exit_strategy::EVERY_TIM as u8,
-            watchdog_timer_val: 0xFFFFFF, // TODO: enable watchdog timer
+            watchdog_timer_val: 0xFF_FFFF, // TODO: enable watchdog timer
             keep_alive_enable: 1,
             keep_alive_period: 60,
             max_ps_poll_fail_cnt: 10,

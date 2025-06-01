@@ -15,7 +15,6 @@ use embassy_nrf::{bind_interrupts, spim};
 use embassy_time::{Delay, Duration, Timer};
 use embedded_hal_bus::spi::ExclusiveDevice;
 use nrf70::bus::SpiBus;
-use nrf70::control::ScanOptions;
 use static_cell::StaticCell;
 use {embassy_nrf as _, panic_probe as _};
 
@@ -23,15 +22,10 @@ bind_interrupts!(struct Irqs {
     SERIAL0 => spim::InterruptHandler<embassy_nrf::peripherals::SERIAL0>;
 });
 
+type Nrf70SpiBus = SpiBus<ExclusiveDevice<Spim<'static, SERIAL0>, Output<'static>, Delay>>;
+
 #[embassy_executor::task]
-async fn nrf70_task(
-    mut runner: nrf70::Runner<
-        'static,
-        SpiBus<ExclusiveDevice<Spim<'static, SERIAL0>, Output<'static>, Delay>>,
-        Input<'static>,
-        Output<'static>,
-    >,
-) -> ! {
+async fn nrf70_task(mut runner: nrf70::Runner<'static, Nrf70SpiBus, Input<'static>, Output<'static>>) -> ! {
     runner.run().await
 }
 
@@ -65,10 +59,23 @@ async fn main(spawner: Spawner) {
     let spi = ExclusiveDevice::new(spim, cs, Delay).unwrap();
     let bus = SpiBus::new(spi);
 
+    /*
+    // QSPI is not working well yet.
+    let mut config = qspi::Config::default();
+    config.read_opcode = qspi::ReadOpcode::READ4IO;
+    config.write_opcode = qspi::WriteOpcode::PP4IO;
+    config.write_page_size = qspi::WritePageSize::_256BYTES;
+    config.frequency = qspi::Frequency::M8; // NOTE: Waking RPU works reliably only with lowest frequency (8MHz)
+
+    let irq = interrupt::take!(QSPI);
+    let qspi: qspi::Qspi<_> = qspi::Qspi::new(p.QSPI, irq, sck, csn, dio0, dio1, dio2, dio3, config);
+    let bus = QspiBus { qspi };
+    */
+
     static STATE: StaticCell<nrf70::State> = StaticCell::new();
     let state = STATE.init(nrf70::State::new());
 
-    let (device, mut control, mut runner) = nrf70::new(state, bus, bucken, iovdd_ctl, host_irq).await;
+    let (_device, mut control, runner) = nrf70::new(state, bus, bucken, iovdd_ctl, host_irq).await;
     unwrap!(spawner.spawn(nrf70_task(runner)));
 
     match control.init(FW).await {
@@ -102,29 +109,4 @@ async fn main(spawner: Spawner) {
         led.set_low();
         Timer::after(Duration::from_millis(100)).await;
     }
-
-    // control.init(clm).await;
-    // control
-    //     .set_power_management(cyw43::PowerManagementMode::PowerSave)
-    //     .await;
-    // let mut scanner = control.scan(Default::default()).await;
-    // while let Some(bss) = scanner.next().await {
-    //     if let Ok(ssid_str) = str::from_utf8(&bss.ssid) {
-    //         info!("scanned {} == {:x}", ssid_str, bss.bssid);
-    //     }
-    //
-    // }
 }
-
-/*
-// QSPI is not working well yet.
-let mut config = qspi::Config::default();
-config.read_opcode = qspi::ReadOpcode::READ4IO;
-config.write_opcode = qspi::WriteOpcode::PP4IO;
-config.write_page_size = qspi::WritePageSize::_256BYTES;
-config.frequency = qspi::Frequency::M8; // NOTE: Waking RPU works reliably only with lowest frequency (8MHz)
-
-let irq = interrupt::take!(QSPI);
-let qspi: qspi::Qspi<_> = qspi::Qspi::new(p.QSPI, irq, sck, csn, dio0, dio1, dio2, dio3, config);
-let bus = QspiBus { qspi };
-*/

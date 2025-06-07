@@ -6,11 +6,11 @@ use crate::{
     bindings::{
         host_rpu_msg, host_rpu_msg_hdr, nrf_wifi_cmd_get_stats, nrf_wifi_cmd_sys_deinit, nrf_wifi_cmd_sys_init,
         nrf_wifi_host_rpu_msg_type, nrf_wifi_ie, nrf_wifi_index_ids, nrf_wifi_scan_params, nrf_wifi_sys_commands,
-        nrf_wifi_sys_head, nrf_wifi_umac_cmd_abort_scan, nrf_wifi_umac_cmd_add_vif, nrf_wifi_umac_cmd_change_macaddr,
-        nrf_wifi_umac_cmd_chg_vif_state, nrf_wifi_umac_cmd_get_scan_results, nrf_wifi_umac_cmd_scan,
-        nrf_wifi_umac_commands, nrf_wifi_umac_hdr, nrf_wifi_umac_scan_info, rpu_stats_type, scan_reason,
-        NRF_WIFI_INDEX_IDS_WDEV_ID_VALID, RPU_ADDR_MASK_OFFSET, RPU_DATA_CMD_SIZE_MAX_RX, RPU_MCU_CORE_INDIRECT_BASE,
-        RPU_REG_INT_TO_MCU_CTRL,
+        nrf_wifi_sys_head, nrf_wifi_umac_chg_vif_state_info, nrf_wifi_umac_cmd_abort_scan, nrf_wifi_umac_cmd_add_vif,
+        nrf_wifi_umac_cmd_change_macaddr, nrf_wifi_umac_cmd_chg_vif_state, nrf_wifi_umac_cmd_get_scan_results,
+        nrf_wifi_umac_cmd_scan, nrf_wifi_umac_commands, nrf_wifi_umac_hdr, nrf_wifi_umac_scan_info, rpu_stats_type,
+        scan_reason, NRF_WIFI_INDEX_IDS_WDEV_ID_VALID, RPU_ADDR_MASK_OFFSET, RPU_DATA_CMD_SIZE_MAX_RX,
+        RPU_MCU_CORE_INDIRECT_BASE, RPU_REG_INT_TO_MCU_CTRL,
     },
     bus::Bus,
     rpu::{Error, ProcessorType},
@@ -22,11 +22,13 @@ use super::Rpu;
 
 pub trait Command {
     const MESSAGE_TYPE: nrf_wifi_host_rpu_msg_type;
-    fn fill(&mut self);
+    fn prepare(&mut self);
 
-    fn kind(&self) -> nrf_wifi_host_rpu_msg_type {
+    fn domain(&self) -> nrf_wifi_host_rpu_msg_type {
         return Self::MESSAGE_TYPE;
     }
+
+    fn kind(&self) -> u32;
 }
 
 macro_rules! impl_cmd {
@@ -34,11 +36,13 @@ macro_rules! impl_cmd {
         impl Command for $cmd {
             const MESSAGE_TYPE: nrf_wifi_host_rpu_msg_type =
                 nrf_wifi_host_rpu_msg_type::NRF_WIFI_HOST_RPU_MSG_TYPE_SYSTEM;
-            fn fill(&mut self) {
-                self.sys_head = nrf_wifi_sys_head {
-                    cmd_event: $num as _,
-                    len: size_of::<Self>() as _,
-                };
+            fn prepare(&mut self) {
+                self.sys_head.cmd_event = $num as _;
+                self.sys_head.len = size_of::<Self>() as _;
+            }
+
+            fn kind(&self) -> u32 {
+                self.sys_head.cmd_event
             }
         }
     };
@@ -46,11 +50,12 @@ macro_rules! impl_cmd {
         impl Command for $cmd {
             const MESSAGE_TYPE: nrf_wifi_host_rpu_msg_type =
                 nrf_wifi_host_rpu_msg_type::NRF_WIFI_HOST_RPU_MSG_TYPE_UMAC;
-            fn fill(&mut self) {
-                self.umac_hdr = nrf_wifi_umac_hdr {
-                    cmd_evnt: $num as _,
-                    ..unsafe { zeroed() }
-                };
+            fn prepare(&mut self) {
+                self.umac_hdr.cmd_evnt = $num as _;
+            }
+
+            fn kind(&self) -> u32 {
+                self.umac_hdr.cmd_evnt
             }
         }
     };
@@ -88,7 +93,7 @@ impl Default for nrf_wifi_cmd_get_stats {
             stats_type: rpu_stats_type::RPU_STATS_TYPE_ALL as i32,
             op_mode: 0,
         };
-        cmd.fill();
+        cmd.prepare();
         cmd
     }
 }
@@ -106,11 +111,23 @@ impl_cmd!(
     nrf_wifi_umac_cmd_change_macaddr,
     nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CHANGE_MACADDR
 );
+
 impl_cmd!(
     umac,
     nrf_wifi_umac_cmd_chg_vif_state,
     nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_IFFLAGS
 );
+
+impl Default for nrf_wifi_umac_cmd_chg_vif_state {
+    fn default() -> Self {
+        let mut cmd = nrf_wifi_umac_cmd_chg_vif_state {
+            umac_hdr: nrf_wifi_umac_hdr::default(),
+            info: nrf_wifi_umac_chg_vif_state_info { state: 0, if_index: 0 },
+        };
+        cmd.prepare();
+        cmd
+    }
+}
 
 impl_cmd!(
     umac,
@@ -143,7 +160,7 @@ impl Default for nrf_wifi_umac_cmd_scan {
                 },
             },
         };
-        cmd.fill();
+        cmd.prepare();
         cmd
     }
 }
@@ -159,7 +176,7 @@ impl Default for nrf_wifi_umac_cmd_abort_scan {
         let mut cmd = nrf_wifi_umac_cmd_abort_scan {
             umac_hdr: nrf_wifi_umac_hdr::default(),
         };
-        cmd.fill();
+        cmd.prepare();
         cmd
     }
 }
@@ -176,7 +193,7 @@ impl Default for nrf_wifi_umac_cmd_get_scan_results {
             umac_hdr: nrf_wifi_umac_hdr::default(),
             scan_reason: scan_reason::SCAN_CONNECT as i32,
         };
-        cmd.fill();
+        cmd.prepare();
         cmd
     }
 }
@@ -187,7 +204,7 @@ const MAX_CMD_SIZE: usize = 1024;
 impl<BUS: Bus> Rpu<BUS> {
     pub(crate) async fn send_command_raw(
         &mut self,
-        kind: nrf_wifi_host_rpu_msg_type,
+        domain: nrf_wifi_host_rpu_msg_type,
         buffer: *const [u8],
     ) -> Result<(), Error> {
         let mut buf = [0u32; MAX_CMD_SIZE / 4];
@@ -198,9 +215,28 @@ impl<BUS: Bus> Rpu<BUS> {
                 len: buffer.len() as u32,
                 resubmit: 0,
             },
-            type_: kind as i32,
+            type_: domain as i32,
             msg: unsafe { zeroed() },
         };
+
+        let command_type = match domain {
+            nrf_wifi_host_rpu_msg_type::NRF_WIFI_HOST_RPU_MSG_TYPE_SYSTEM => {
+                let header: *const nrf_wifi_sys_head = buffer as *const nrf_wifi_sys_head;
+                unsafe { header.read().cmd_event }
+            }
+            nrf_wifi_host_rpu_msg_type::NRF_WIFI_HOST_RPU_MSG_TYPE_UMAC => {
+                let header: *const nrf_wifi_umac_hdr = buffer as *const nrf_wifi_umac_hdr;
+                unsafe { header.read().cmd_evnt }
+            }
+            _ => 0xDEAD_BEEF,
+        };
+
+        debug!(
+            "Writing command {:#X} to domain {:?}. Length: {}",
+            command_type,
+            domain,
+            buffer.len()
+        );
 
         let cmd_bytes = sliceit(&header);
         buf8[..cmd_bytes.len()].copy_from_slice(cmd_bytes);
@@ -209,9 +245,11 @@ impl<BUS: Bus> Rpu<BUS> {
         let src: &[u8] = unsafe { &*buffer };
         buf8[cmd_bytes.len()..(cmd_bytes.len() + buffer.len())].copy_from_slice(src);
 
+        let total_length = buffer.len() + cmd_bytes.len();
+
         match embassy_time::with_timeout(
             Duration::from_secs(1),
-            self.enqueue_command_and_trigger(slice8(&buf[..(buffer.len() + 3) / 4])),
+            self.enqueue_command_and_trigger(slice8(&buf[..(total_length + 3) / 4])),
         )
         .await
         {
@@ -230,18 +268,29 @@ impl<BUS: Bus> Rpu<BUS> {
         let mut buf = [0u32; MAX_CMD_SIZE / 4];
         let buf8 = slice8_mut(&mut buf);
 
-        command.fill();
+        command.prepare();
+
+        let kind = command.kind();
 
         let mut cmd = Msg {
             header: unsafe { zeroed() },
             cmd: command,
         };
 
-        cmd.header.hdr.len = size_of_val(&cmd) as _;
+        let length = size_of_val(&cmd) as _;
+
+        cmd.header.hdr.len = length;
         cmd.header.type_ = T::MESSAGE_TYPE as _;
 
         let cmd_bytes = sliceit(&cmd);
         buf8[..cmd_bytes.len()].copy_from_slice(cmd_bytes);
+
+        debug!(
+            "Writing command {:#x} to domain {:?}. Length: {}",
+            kind,
+            T::MESSAGE_TYPE,
+            length
+        );
 
         match embassy_time::with_timeout(
             Duration::from_secs(1),
@@ -268,7 +317,7 @@ impl<BUS: Bus> Rpu<BUS> {
             }
         };
 
-        debug!("Writing command to {:#x}", message_address);
+        debug!("Enqueued command to hostport address: {:#x}", message_address);
 
         // Write the message to the suggested address
         self.write_buffer(message_address, None, slice32(message)).await;

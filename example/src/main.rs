@@ -83,23 +83,9 @@ async fn main(spawner: Spawner) {
         Err(error) => error!("Failed to initialize {:?}", error),
     };
 
-    // Timer::after_millis(5000).await;
-
-    // match control.get_scan_results().await {
-    //     Ok(()) => info!("Requested scan results"),
-    //     Err(error) => error!("Failed to request scan results {}", error),
-    // }
-
     // match control.get_stats().await {
     //     Ok(()) => info!("Requested stats"),
     //     Err(error) => error!("Failed to request stats {}", error),
-    // }
-    //
-    // let scan_options = ScanOptions::default();
-    //
-    // match control.scan(scan_options).await {
-    //     Ok(()) => info!("Started scan..."),
-    //     Err(error) => error!("Failed to perform scan {}", error),
     // }
 
     let mut led = Output::new(p.P1_06.degrade(), Level::High, OutputDrive::Standard);

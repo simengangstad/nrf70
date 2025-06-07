@@ -75,6 +75,7 @@ impl<BUS: Bus> Rpu<BUS> {
         assert!(memory_region.start + offset + (buffer.len() as u32 * 4) <= memory_region.end);
 
         // latency=0 optimization doesn't seem to be working, we read the first word repeatedly.
+        // TODO: Think we need to follow the convention with write enable byte here
         if memory_region.latency == 0 && false {
             // No latency, we can do a big read directly.
             self.bus.read(memory_region.start + offset, buffer).await;

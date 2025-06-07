@@ -142,12 +142,14 @@ impl<BUS: Bus> Rpu<BUS> {
             version.version, version.major, version.minor, version.extra
         );
 
-        // Done in Zephyr sample FW, maybe not necessary
+        // TODO: Done in Zephyr sample FW, maybe not necessary
         self.wake_up().await?;
 
         // -- Retrieve HPQM information ---
 
         // Read the host port queue info for all the queues provided by the RPU (like command, event, RX buffer queues etc)
+        //
+        // TODO: this read is strictly not needed as we extract the UMAC info further down here
         let mut hpqm_info_buffer = [0; size_of::<host_rpu_hpqm_info>()];
         self.read_buffer(RPU_MEM_HPQ_INFO, None, slice32_mut(&mut hpqm_info_buffer))
             .await;
@@ -159,11 +161,7 @@ impl<BUS: Bus> Rpu<BUS> {
         self.tx_command_base_address = Some(RPU_MEM_TX_CMD_BASE);
 
         // -- Retrieve OTP info ---
-        let mut otp_info_buffer = [0; size_of::<host_rpu_umac_info>()];
-        self.read_buffer(RPU_MEM_UMAC_BOOT_SIG, None, slice32_mut(&mut otp_info_buffer))
-            .await;
-
-        let otp_info = unsafe { core::mem::transmute_copy(&otp_info_buffer) };
+        let umac_info = self.retrieve_umac_info().await;
         let otp_flags = self.read_u32(RPU_MEM_OTP_INFO_FLAGS, None).await;
 
         // -- Retrieve RF parameters ---
@@ -181,7 +179,7 @@ impl<BUS: Bus> Rpu<BUS> {
             max_pwr_5g_high_mcs7: 13 * 4,
         };
 
-        let rf_parameters = self.get_rf_parameters(&otp_info, otp_flags, &tx_pwr_ceil_params).await;
+        let rf_parameters = self.get_rf_parameters(&umac_info, otp_flags, &tx_pwr_ceil_params).await;
 
         // -- Initialize RX queues ---
 
@@ -206,65 +204,71 @@ impl<BUS: Bus> Rpu<BUS> {
         }
 
         // --- Initialize the firmware ---
-
-        self.firmware_initialize(&rf_parameters).await?;
-
-        // Wait for event init done
-
-        // TODO: after init, set MAC address
-        // --- Check MAC address ---
-
-        let mac_address = [
-            (otp_info.mac_address0[0]) as u8,
-            (otp_info.mac_address0[0] >> 8) as u8,
-            (otp_info.mac_address0[0] >> 16) as u8,
-            0x0,
-            (otp_info.mac_address0[1]) as u8,
-            (otp_info.mac_address0[1] >> 8) as u8,
-        ];
-
-        info!(
-            "MAC address: {:#x}:{:#x}:{:#x}:{:#x}:{:#x}:{:#x}",
-            mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]
-        );
-
-        // TODO: Send command
-
-        // TODO: bring interface up: nrf_wifi_fmac_chg_vif_state and wait for event
-
-        // let result = self.read_u32_from_region(SYSBUS, 0x0C0).await;
-        // info!("PART: {}", result);
-
-        Ok(())
+        self.firmware_initialize(&rf_parameters).await
     }
 
-    pub async fn wait_for_event(
+    pub async fn read_event(
         &mut self,
-        buffer: &mut [u32; (MAX_EVENT_POOL_LEN / 4) as usize],
+        message_buffer: &mut [u32; (MAX_EVENT_POOL_LEN / 4) as usize],
     ) -> Result<host_rpu_msg, Error> {
         let hostport_queues_info = match self.hostport_queues_info {
             Some(hostport_queues_info) => Ok(hostport_queues_info),
             None => Err(Error::NotInitialized),
         }?;
 
-        loop {
-            let event_address = self.hostport_queue_dequeue(hostport_queues_info.event_busy_queue).await;
+        // -- Is there an event in the queue ? ---
 
-            let event_address = match event_address {
-                // No more events to read. Sometimes when low power mode is enabled
-                // we see a wrong address, but it work after a while, so, add a
-                // check for that.
-                None | Some(0xAAAA_AAAA) => {
-                    Timer::after_millis(100).await;
-                    continue;
-                }
-                Some(event_address) => event_address,
-            };
+        let event_address = self.hostport_queue_dequeue(hostport_queues_info.event_busy_queue).await;
 
-            debug!("Got event. Address: {:#x}", event_address);
+        let event_address = match event_address {
+            // No more events to read. Sometimes when low power mode is enabled
+            // we see a wrong address, but it work after a while, so, add a
+            // check for that.
+            None | Some(0xAAAA_AAAA) => return Err(Error::NoData),
+            Some(event_address) => event_address,
+        };
 
-            return self.read_event(event_address, buffer).await;
+        // -- Read out and decode header ---
+
+        debug!("Fetching event from address: {:#x}", event_address);
+
+        const HEADER_SIZE: usize = core::mem::size_of::<host_rpu_msg>();
+        let mut header_buffer = [0; HEADER_SIZE];
+
+        self.read_buffer(event_address, None, slice32_mut(&mut header_buffer))
+            .await;
+
+        let header: host_rpu_msg = unsafe { core::mem::transmute_copy(&header_buffer) };
+
+        // -- Read out event from queue ---
+
+        let message_length = header.hdr.len as usize;
+
+        self.read_buffer(
+            event_address + HEADER_SIZE as u32,
+            None,
+            &mut message_buffer[..message_length / 4],
+        )
+        .await;
+
+        if header.hdr.resubmit > 0 {
+            self.free_event(event_address).await?;
         }
+
+        // TODO: fix this
+        if message_length > MAX_EVENT_POOL_LEN as usize {
+            todo!("Fragmented event read is not yet implemented");
+        } else if message_length > RPU_EVENT_COMMON_SIZE_MAX as usize {
+            // This is a longer than usual event. We gotta read it again
+            self.read_buffer(
+                event_address + HEADER_SIZE as u32,
+                None,
+                &mut message_buffer[..(message_length + 3) / 4],
+            )
+            .await;
+        }
+
+        Ok(header)
     }
 
     pub async fn irq_ack(&mut self) {
@@ -286,6 +290,14 @@ impl<BUS: Bus> Rpu<BUS> {
             1 << RPU_REG_BIT_MIPS_WATCHDOG_INT_CLEAR,
         )
         .await;
+    }
+
+    pub async fn retrieve_umac_info(&mut self) -> host_rpu_umac_info {
+        let mut umac_info_buffer = [0u8; size_of::<host_rpu_umac_info>()];
+        self.read_buffer(RPU_MEM_UMAC_BOOT_SIG, None, slice32_mut(&mut umac_info_buffer))
+            .await;
+
+        unsafe { core::mem::transmute_copy(&umac_info_buffer) }
     }
 }
 
@@ -385,43 +397,6 @@ impl<BUS: Bus> Rpu<BUS> {
         }
     }
 
-    async fn read_event(&mut self, event_address: u32, buf: &mut [u32]) -> Result<host_rpu_msg, Error> {
-        const MESSAGE_WITHOUT_DATA_SIZE: usize = core::mem::size_of::<host_rpu_msg>();
-        let mut message_buffer = [0; MESSAGE_WITHOUT_DATA_SIZE];
-
-        self.read_buffer(event_address, None, slice32_mut(&mut message_buffer))
-            .await;
-
-        let message: host_rpu_msg = unsafe { core::mem::transmute_copy(&message_buffer) };
-
-        self.read_buffer(
-            event_address + MESSAGE_WITHOUT_DATA_SIZE as u32,
-            None,
-            &mut buf[..RPU_EVENT_COMMON_SIZE_MAX as usize / 4],
-        )
-        .await;
-
-        // Get the header from the front of the event data
-        if message.hdr.resubmit > 0 {
-            self.free_event(event_address).await?;
-        }
-
-        let len = message.hdr.len as usize;
-        if len > MAX_EVENT_POOL_LEN as usize {
-            todo!("Fragmented event read is not yet implemented");
-        } else if len > RPU_EVENT_COMMON_SIZE_MAX as usize {
-            // This is a longer than usual event. We gotta read it again
-            self.read_buffer(
-                event_address + MESSAGE_WITHOUT_DATA_SIZE as u32,
-                None,
-                &mut buf[..(len + 3) / 4],
-            )
-            .await;
-        }
-
-        Ok(message)
-    }
-
     async fn free_event(&mut self, event_address: u32) -> Result<(), Error> {
         let hostport_queues_info = match self.hostport_queues_info {
             Some(hostport_queues_info) => Ok(hostport_queues_info),
@@ -472,11 +447,6 @@ impl<BUS: Bus> Rpu<BUS> {
     }
 
     async fn hostport_queue_enqueue(&mut self, hostport_queue: host_rpu_hpq, value: u32) {
-        // TODO: temp
-        // match self.wake_up().await {
-        //     Ok(()) => (),
-        //     Err(error) => error!("Failed to wake up: {:?}", error),
-        // }
         self.write_u32(hostport_queue.enqueue_addr, None, value).await;
     }
 

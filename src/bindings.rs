@@ -44,6 +44,79 @@ impl TryFrom<u32> for nrf_wifi_sys_events {
     }
 }
 
+impl TryFrom<u32> for nrf_wifi_umac_events {
+    type Error = u32;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            256 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_UNSPECIFIED),
+            257 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_TRIGGER_SCAN_START),
+            258 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_ABORTED),
+            259 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_DONE),
+            260 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_RESULT),
+            261 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_AUTHENTICATE),
+            262 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_ASSOCIATE),
+            263 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CONNECT),
+            264 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DEAUTHENTICATE),
+            265 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DISASSOCIATE),
+            266 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_NEW_STATION),
+            267 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DEL_STATION),
+            268 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_STATION),
+            269 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_REMAIN_ON_CHANNEL),
+            270 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CANCEL_REMAIN_ON_CHANNEL),
+            271 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DISCONNECT),
+            272 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_FRAME),
+            273 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_COOKIE_RESP),
+            274 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_FRAME_TX_STATUS),
+            275 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_IFFLAGS_STATUS),
+            276 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_TX_POWER),
+            277 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_CHANNEL),
+            278 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SET_INTERFACE),
+            279 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_UNPROT_DEAUTHENTICATE),
+            280 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_UNPROT_DISASSOCIATE),
+            281 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_NEW_INTERFACE),
+            282 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_NEW_WIPHY),
+            283 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_IFHWADDR),
+            284 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_REG),
+            285 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SET_REG),
+            286 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_REQ_SET_REG),
+            287 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_KEY),
+            288 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_BEACON_HINT),
+            289 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_REG_CHANGE),
+            290 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_WIPHY_REG_CHANGE),
+            291 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_DISPLAY_RESULT),
+            292 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CMD_STATUS),
+            293 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_BSS_INFO),
+            294 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CONFIG_TWT),
+            295 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_TEARDOWN_TWT),
+            296 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_TWT_SLEEP),
+            297 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_COALESCING),
+            298 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_MCAST_FILTER),
+            299 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_CONNECTION_INFO),
+            300 => Ok(nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_POWER_SAVE_INFO),
+            _ => Err(value),
+        }
+    }
+}
+
+impl TryFrom<u32> for nrf_wifi_umac_data_commands {
+    type Error = u32;
+
+    fn try_from(val: u32) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_MGMT_BUFF_CONFIG),
+            1 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_TX_BUFF),
+            2 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_TX_BUFF_DONE),
+            3 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_RX_BUFF),
+            4 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_CARRIER_ON),
+            5 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_CARRIER_OFF),
+            6 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_PM_MODE),
+            7 => Ok(nrf_wifi_umac_data_commands::NRF_WIFI_CMD_PS_GET_FRAMES),
+            other => Err(other),
+        }
+    }
+}
+
 impl TryFrom<u32> for nrf70_image_ids {
     type Error = u32;
 
@@ -89,19 +162,19 @@ impl defmt::Format for nrf70_image_ids {
 impl defmt::Format for nrf_wifi_sys_events {
     fn format(&self, fmt: Formatter) {
         match self {
-            Self::NRF_WIFI_EVENT_PWR_DATA => defmt::write!(fmt, "PWR_DATA"),
-            Self::NRF_WIFI_EVENT_INIT_DONE => defmt::write!(fmt, "INIT_DONE"),
-            Self::NRF_WIFI_EVENT_STATS => defmt::write!(fmt, "STATS"),
-            Self::NRF_WIFI_EVENT_DEINIT_DONE => defmt::write!(fmt, "DEINIT_DONE"),
-            Self::NRF_WIFI_EVENT_RF_TEST => defmt::write!(fmt, "RF_TEST"),
-            Self::NRF_WIFI_EVENT_COEX_CONFIG => defmt::write!(fmt, "COEX_CONFIG"),
-            Self::NRF_WIFI_EVENT_INT_UMAC_STATS => defmt::write!(fmt, "INT_UMAC_STATS"),
-            Self::NRF_WIFI_EVENT_RADIOCMD_STATUS => defmt::write!(fmt, "RADIOCMD_STATUS"),
-            Self::NRF_WIFI_EVENT_CHANNEL_SET_DONE => defmt::write!(fmt, "CHANNEL_SET_DONE"),
-            Self::NRF_WIFI_EVENT_MODE_SET_DONE => defmt::write!(fmt, "MODE_SET_DONE"),
-            Self::NRF_WIFI_EVENT_FILTER_SET_DONE => defmt::write!(fmt, "FILTER_SET_DONE"),
-            Self::NRF_WIFI_EVENT_RAW_TX_DONE => defmt::write!(fmt, "RAW_TX_DONE"),
-            Self::NRF_WIFI_EVENT_OFFLOADED_RAWTX_STATUS => defmt::write!(fmt, "OFFLOADED_RAWTX_STATUS"),
+            Self::NRF_WIFI_EVENT_PWR_DATA => defmt::write!(fmt, "NRF_WIFI_EVENT_PWR_DATA"),
+            Self::NRF_WIFI_EVENT_INIT_DONE => defmt::write!(fmt, "NRF_WIFI_EVENT_INIT_DONE"),
+            Self::NRF_WIFI_EVENT_STATS => defmt::write!(fmt, "NRF_WIFI_EVENT_STATS"),
+            Self::NRF_WIFI_EVENT_DEINIT_DONE => defmt::write!(fmt, "NRF_WIFI_EVENT_DEINIT_DONE"),
+            Self::NRF_WIFI_EVENT_RF_TEST => defmt::write!(fmt, "NRF_WIFI_EVENT_RF_TEST"),
+            Self::NRF_WIFI_EVENT_COEX_CONFIG => defmt::write!(fmt, "NRF_WIFI_EVENT_COEX_CONFIG"),
+            Self::NRF_WIFI_EVENT_INT_UMAC_STATS => defmt::write!(fmt, "NRF_WIFI_EVENT_INT_UMAC_STATS"),
+            Self::NRF_WIFI_EVENT_RADIOCMD_STATUS => defmt::write!(fmt, "NRF_WIFI_EVENT_RADIOCMD_STATUS"),
+            Self::NRF_WIFI_EVENT_CHANNEL_SET_DONE => defmt::write!(fmt, "NRF_WIFI_EVENT_CHANNEL_SET_DONE"),
+            Self::NRF_WIFI_EVENT_MODE_SET_DONE => defmt::write!(fmt, "NRF_WIFI_EVENT_MODE_SET_DONE"),
+            Self::NRF_WIFI_EVENT_FILTER_SET_DONE => defmt::write!(fmt, "NRF_WIFI_EVENT_FILTER_SET_DONE"),
+            Self::NRF_WIFI_EVENT_RAW_TX_DONE => defmt::write!(fmt, "NRF_WIFI_EVENT_RAW_TX_DONE"),
+            Self::NRF_WIFI_EVENT_OFFLOADED_RAWTX_STATUS => defmt::write!(fmt, "NRF_WIFI_EVENT_OFFLOADED_RAWTX_STATUS"),
         }
     }
 }
@@ -112,8 +185,454 @@ impl defmt::Format for nrf_wifi_host_rpu_msg_type {
         match self {
             Self::NRF_WIFI_HOST_RPU_MSG_TYPE_SYSTEM => defmt::write!(fmt, "SYSTEM"),
             Self::NRF_WIFI_HOST_RPU_MSG_TYPE_SUPPLICANT => defmt::write!(fmt, "SUPPLICANT"),
-            Self::NRF_WIFI_HOST_RPU_MSG_TYPE_DATA => defmt::write!(fmt, "SUPPLICANT"),
+            Self::NRF_WIFI_HOST_RPU_MSG_TYPE_DATA => defmt::write!(fmt, "DATA"),
             Self::NRF_WIFI_HOST_RPU_MSG_TYPE_UMAC => defmt::write!(fmt, "UMAC"),
+        }
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_umac_events {
+    fn format(&self, fmt: Formatter) {
+        match self {
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_UNSPECIFIED => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_UNSPECIFIED")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_TRIGGER_SCAN_START => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_TRIGGER_SCAN_START")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_ABORTED => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_SCAN_ABORTED")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_DONE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_SCAN_DONE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_RESULT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_SCAN_RESULT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_AUTHENTICATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_AUTHENTICATE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_ASSOCIATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_ASSOCIATE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CONNECT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_CONNECT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DEAUTHENTICATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_DEAUTHENTICATE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DISASSOCIATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_DISASSOCIATE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_NEW_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_NEW_STATION")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DEL_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_DEL_STATION")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_STATION")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_REMAIN_ON_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_REMAIN_ON_CHANNEL")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CANCEL_REMAIN_ON_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_CANCEL_REMAIN_ON_CHANNEL")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_DISCONNECT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_DISCONNECT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_FRAME => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_FRAME")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_COOKIE_RESP => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_COOKIE_RESP")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_FRAME_TX_STATUS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_FRAME_TX_STATUS")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_IFFLAGS_STATUS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_IFFLAGS_STATUS")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_TX_POWER => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_TX_POWER")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_CHANNEL")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SET_INTERFACE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_SET_INTERFACE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_UNPROT_DEAUTHENTICATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_UNPROT_DEAUTHENTICATE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_UNPROT_DISASSOCIATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_UNPROT_DISASSOCIATE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_NEW_INTERFACE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_NEW_INTERFACE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_NEW_WIPHY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_NEW_WIPHY")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_IFHWADDR => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_IFHWADDR")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_REG => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_REG")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SET_REG => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_SET_REG")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_REQ_SET_REG => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_REQ_SET_REG")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_KEY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_KEY")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_BEACON_HINT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_BEACON_HINT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_REG_CHANGE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_REG_CHANGE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_WIPHY_REG_CHANGE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_WIPHY_REG_CHANGE")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_SCAN_DISPLAY_RESULT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_SCAN_DISPLAY_RESULT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CMD_STATUS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_CMD_STATUS")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_BSS_INFO => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_BSS_INFO")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_CONFIG_TWT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_CONFIG_TWT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_TEARDOWN_TWT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_TEARDOWN_TWT")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_TWT_SLEEP => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_TWT_SLEEP")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_COALESCING => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_COALESCING")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_MCAST_FILTER => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_MCAST_FILTER")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_CONNECTION_INFO => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_CONNECTION_INFO")
+            }
+            nrf_wifi_umac_events::NRF_WIFI_UMAC_EVENT_GET_POWER_SAVE_INFO => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_EVENT_GET_POWER_SAVE_INFO")
+            }
+        }
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_umac_data_commands {
+    fn format(&self, fmt: Formatter) {
+        match self {
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_MGMT_BUFF_CONFIG => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_MGMT_BUFF_CONFIG")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_TX_BUFF => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_TX_BUFF")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_TX_BUFF_DONE => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_TX_BUFF_DONE")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_RX_BUFF => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_RX_BUFF")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_CARRIER_ON => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_CARRIER_ON")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_CARRIER_OFF => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_CARRIER_OFF")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_PM_MODE => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_PM_MODE")
+            }
+            nrf_wifi_umac_data_commands::NRF_WIFI_CMD_PS_GET_FRAMES => {
+                defmt::write!(fmt, "NRF_WIFI_CMD_PS_GET_FRAMES")
+            }
+        }
+    }
+}
+
+impl TryFrom<u32> for nrf_wifi_umac_commands {
+    type Error = u32;
+
+    fn try_from(val: u32) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_TRIGGER_SCAN),
+            1 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_SCAN_RESULTS),
+            2 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_AUTHENTICATE),
+            3 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_ASSOCIATE),
+            4 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEAUTHENTICATE),
+            5 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_WIPHY),
+            6 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_KEY),
+            7 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEL_KEY),
+            8 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_KEY),
+            9 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_KEY),
+            10 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_BEACON),
+            11 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_BEACON),
+            12 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_BSS),
+            13 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_START_AP),
+            14 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_STOP_AP),
+            15 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_INTERFACE),
+            16 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_INTERFACE),
+            17 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEL_INTERFACE),
+            18 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_IFFLAGS),
+            19 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_STATION),
+            20 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEL_STATION),
+            21 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_STATION),
+            22 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_STATION),
+            23 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_START_P2P_DEVICE),
+            24 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_STOP_P2P_DEVICE),
+            25 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_REMAIN_ON_CHANNEL),
+            26 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CANCEL_REMAIN_ON_CHANNEL),
+            27 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_CHANNEL),
+            28 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_RADAR_DETECT),
+            29 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_REGISTER_FRAME),
+            30 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_FRAME),
+            31 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_JOIN_IBSS),
+            32 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_WIN_STA_CONNECT),
+            33 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_POWER_SAVE),
+            34 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_WOWLAN),
+            35 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SUSPEND),
+            36 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_RESUME),
+            37 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_QOS_MAP),
+            38 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_CHANNEL),
+            39 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_TX_POWER),
+            40 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_INTERFACE),
+            41 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_WIPHY),
+            42 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_IFHWADDR),
+            43 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_IFHWADDR),
+            44 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_REG),
+            45 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_REG),
+            46 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_REQ_SET_REG),
+            47 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_UAPSD),
+            48 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_TWT),
+            49 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_TEARDOWN_TWT),
+            50 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_ABORT_SCAN),
+            51 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_MCAST_FILTER),
+            52 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CHANGE_MACADDR),
+            53 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_POWER_SAVE_TIMEOUT),
+            54 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_CONNECTION_INFO),
+            55 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_POWER_SAVE_INFO),
+            56 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_LISTEN_INTERVAL),
+            57 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_EXTENDED_PS),
+            58 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_QUIET_PERIOD),
+            59 => Ok(nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_PS_EXIT_STRATEGY),
+            other => Err(other),
+        }
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_umac_commands {
+    fn format(&self, fmt: Formatter) {
+        match self {
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_TRIGGER_SCAN => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_TRIGGER_SCAN")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_SCAN_RESULTS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_SCAN_RESULTS")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_AUTHENTICATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_AUTHENTICATE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_ASSOCIATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_ASSOCIATE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEAUTHENTICATE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_DEAUTHENTICATE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_WIPHY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_WIPHY")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_KEY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_NEW_KEY")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEL_KEY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_DEL_KEY")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_KEY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_KEY")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_KEY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_KEY")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_BEACON => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_NEW_BEACON")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_BEACON => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_BEACON")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_BSS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_BSS")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_START_AP => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_START_AP")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_STOP_AP => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_STOP_AP")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_INTERFACE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_NEW_INTERFACE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_INTERFACE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_INTERFACE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEL_INTERFACE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_DEL_INTERFACE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_IFFLAGS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_IFFLAGS")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_NEW_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_NEW_STATION")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_DEL_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_DEL_STATION")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_STATION")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_STATION => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_STATION")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_START_P2P_DEVICE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_START_P2P_DEVICE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_STOP_P2P_DEVICE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_STOP_P2P_DEVICE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_REMAIN_ON_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_REMAIN_ON_CHANNEL")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CANCEL_REMAIN_ON_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_CANCEL_REMAIN_ON_CHANNEL")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_CHANNEL")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_RADAR_DETECT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_RADAR_DETECT")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_REGISTER_FRAME => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_REGISTER_FRAME")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_FRAME => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_FRAME")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_JOIN_IBSS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_JOIN_IBSS")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_WIN_STA_CONNECT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_WIN_STA_CONNECT")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_POWER_SAVE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_POWER_SAVE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_WOWLAN => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_WOWLAN")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SUSPEND => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SUSPEND")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_RESUME => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_RESUME")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_QOS_MAP => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_QOS_MAP")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_CHANNEL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_CHANNEL")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_TX_POWER => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_TX_POWER")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_INTERFACE => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_INTERFACE")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_WIPHY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_WIPHY")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_IFHWADDR => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_IFHWADDR")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_IFHWADDR => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_IFHWADDR")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_REG => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_REG")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_REG => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_REG")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_REQ_SET_REG => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_REQ_SET_REG")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_UAPSD => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_CONFIG_UAPSD")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_TWT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_CONFIG_TWT")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_TEARDOWN_TWT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_TEARDOWN_TWT")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_ABORT_SCAN => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_ABORT_SCAN")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_MCAST_FILTER => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_MCAST_FILTER")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CHANGE_MACADDR => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_CHANGE_MACADDR")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_POWER_SAVE_TIMEOUT => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_POWER_SAVE_TIMEOUT")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_CONNECTION_INFO => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_CONNECTION_INFO")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_GET_POWER_SAVE_INFO => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_GET_POWER_SAVE_INFO")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_SET_LISTEN_INTERVAL => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_SET_LISTEN_INTERVAL")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_EXTENDED_PS => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_CONFIG_EXTENDED_PS")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_CONFIG_QUIET_PERIOD => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_CONFIG_QUIET_PERIOD")
+            }
+            nrf_wifi_umac_commands::NRF_WIFI_UMAC_CMD_PS_EXIT_STRATEGY => {
+                defmt::write!(fmt, "NRF_WIFI_UMAC_CMD_PS_EXIT_STRATEGY")
+            }
+        }
+    }
+}
+
+impl TryFrom<u32> for nrf_wifi_rx_pkt_type {
+    type Error = u32;
+
+    fn try_from(val: u32) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(nrf_wifi_rx_pkt_type::NRF_WIFI_RX_PKT_DATA),
+            1 => Ok(nrf_wifi_rx_pkt_type::NRF_WIFI_RX_PKT_BCN_PRB_RSP),
+            2 => Ok(nrf_wifi_rx_pkt_type::NRF_WIFI_RAW_RX_PKT),
+            other => Err(other),
         }
     }
 }
@@ -645,5 +1164,48 @@ impl defmt::Format for nrf_wifi_sys_umac_event_stats {
             self.sys_head,
             self.fw,
         )
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_umac_hdr {
+    fn format(&self, fmt: Formatter) {
+        let portid = self.portid;
+        let seq = self.seq;
+        let cmd_evnt = self.cmd_evnt;
+        let rpu_ret_val = self.rpu_ret_val;
+        let ids = self.ids;
+
+        defmt::write!(
+            fmt,
+            "nrf_wifi_umac_hdr {{ \
+ portid: {}, seq: {}, cmd_evnt: {}, rpu_ret_val: {}, ids: {} \
+}}",
+            portid,
+            seq,
+            cmd_evnt,
+            rpu_ret_val,
+            ids,
+        );
+    }
+}
+
+impl defmt::Format for nrf_wifi_index_ids {
+    fn format(&self, fmt: Formatter) {
+        let valid_fields = self.valid_fields;
+        let ifaceindex = self.ifaceindex;
+        let nrf_wifi_wiphy_idx = self.nrf_wifi_wiphy_idx;
+        let wdev_id = self.wdev_id;
+
+        defmt::write!(
+            fmt,
+            "nrf_wifi_index_ids {{ \
+ valid_fields: {}, ifaceindex: {}, nrf_wifi_wiphy_idx: {}, wdev_id: {} \
+}}",
+            valid_fields,
+            ifaceindex,
+            nrf_wifi_wiphy_idx,
+            wdev_id,
+        );
     }
 }

@@ -10,9 +10,16 @@ use crate::Error;
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Item {
+    UmacInfo,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Action {
-    LoadFirmware(*const [u8]),
+    Boot(*const [u8]),
     Command((nrf_wifi_host_rpu_msg_type, bool, *const [u8], Option<*mut [u8]>)),
+    Get((Item, *mut [u8])),
 }
 
 #[derive(Clone, Copy)]
@@ -83,6 +90,7 @@ impl ActionState {
                 self.state.set(ActionStateInner::Sent {
                     response_buffer: match pending {
                         Action::Command((_, _, _, response_buffer)) => response_buffer,
+                        Action::Get((_, response_buffer)) => Some(response_buffer),
                         _ => None,
                     },
                 });

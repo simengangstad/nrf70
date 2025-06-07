@@ -156,7 +156,7 @@ impl<BUS: Bus> Rpu<BUS> {
     /// update the default RF parameter with the OTP values.
     pub(super) async fn get_rf_parameters(
         &mut self,
-        otp_info: &host_rpu_umac_info,
+        umac_info: &host_rpu_umac_info,
         otp_flags: u32,
         tx_pwr_ceil_params: &nrf_wifi_tx_pwr_ceil_params,
     ) -> nrf_wifi_phy_rf_params {
@@ -173,7 +173,7 @@ impl<BUS: Bus> Rpu<BUS> {
             .populate_slice(&mut phy_rf_params.phy_params[RF_PARAM_OFFSET..(RF_PARAM_OFFSET + RF_PARAM_LENGTH)]);
 
         if (otp_flags & (!(CALIB_XO_FLAG_MASK as u32))) != 0 {
-            phy_rf_params.xo_offset.xo_freq_offset = otp_info.calib[OTP_OFF_CALIB_XO as usize] as u8;
+            phy_rf_params.xo_offset.xo_freq_offset = umac_info.calib[OTP_OFF_CALIB_XO as usize] as u8;
         }
 
         let (backoff_2g_dsss, backoff_2g_ofdm, backoff_5g_lowband, backoff_5g_midband, backoff_5g_highband) = {

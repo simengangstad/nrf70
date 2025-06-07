@@ -1,12 +1,13 @@
 use core::ptr;
 
-use embassy_time::{Duration, Timer};
+use embassy_time::Duration;
 
 use crate::{
-    action::Action,
+    action::{Action, Item},
     bindings::{
-        nrf_wifi_cmd_get_stats, nrf_wifi_sys_umac_event_stats, nrf_wifi_umac_cmd_get_scan_results,
-        nrf_wifi_umac_cmd_scan,
+        host_rpu_umac_info, nrf_wifi_cmd_get_stats, nrf_wifi_sys_umac_event_stats, nrf_wifi_umac_change_macaddr_info,
+        nrf_wifi_umac_cmd_change_macaddr, nrf_wifi_umac_cmd_chg_vif_state, nrf_wifi_umac_cmd_get_scan_results,
+        nrf_wifi_umac_cmd_scan, nrf_wifi_umac_hdr,
     },
     rpu::commands::Command,
     util::sliceit,
@@ -57,17 +58,86 @@ impl Default for ScanOptions {
     }
 }
 
+#[allow(dead_code)]
 impl<'a> Control<'a> {
     pub async fn init(&mut self, firmware: &'static [u8]) -> Result<(), Error> {
+        self.action_state.issue(Action::Boot(firmware)).await.map(|_| ())?;
+        info!("Boot done");
+
+        // --- Update MAC address ---
+
+        let mut umac_info_buffer = [0u8; size_of::<host_rpu_umac_info>()];
+
         self.action_state
-            .issue(Action::LoadFirmware(firmware))
+            .issue(Action::Get((Item::UmacInfo, &mut umac_info_buffer[..])))
+            .await?;
+
+        let umac_info: host_rpu_umac_info = unsafe { core::mem::transmute_copy(&umac_info_buffer) };
+
+        let mac_address = [
+            (umac_info.mac_address0[0]) as u8,
+            (umac_info.mac_address0[0] >> 8) as u8,
+            (umac_info.mac_address0[0] >> 16) as u8,
+            0x0,
+            (umac_info.mac_address0[1]) as u8,
+            (umac_info.mac_address0[1] >> 8) as u8,
+        ];
+
+        let header = nrf_wifi_umac_hdr::default();
+        let mut command = nrf_wifi_umac_cmd_change_macaddr {
+            umac_hdr: header,
+            macaddr_info: nrf_wifi_umac_change_macaddr_info { mac_addr: mac_address },
+        };
+        command.prepare();
+
+        match self
+            .action_state
+            .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
             .await
-            .map(|_| ())
+        {
+            Ok(_) => {}
+            Err(error) => {
+                error!("Failed to set MAC address: {:?}", error);
+                return Err(error);
+            }
+        }
+
+        info!(
+            "Set MAC address for interface: {:#x}:{:#x}:{:#x}:{:#x}:{:#x}:{:#x}",
+            mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5]
+        );
+
+        // --- Bring interface up ---
+
+        let mut command = nrf_wifi_umac_cmd_chg_vif_state::default();
+        command.info.state = 1;
+        command.prepare();
+
+        match self
+            .action_state
+            .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
+            .await
+        {
+            Ok(_) => {}
+            Err(error) => {
+                error!("Failed to change interface state: {:?}", error);
+                return Err(error);
+            }
+        }
+
+        info!("Brought interface up");
+
+        // let result = self.read_u32_from_region(SYSBUS, 0x0C0).await;
+        // info!("PART: {}", result);
+
+        // --- Set mcast address ---
+        // TODO
+
+        Ok(())
     }
 
     pub async fn scan(&mut self, options: ScanOptions) -> Result<(), Error> {
         let mut command = nrf_wifi_umac_cmd_scan::default();
-        command.fill();
 
         match options.scan_type {
             ScanType::Active => {
@@ -90,37 +160,29 @@ impl<'a> Control<'a> {
             command.info.scan_params.mac_addr = bssid;
         }
 
-        // TEMP
-
-        // command.info.scan_params.num_scan_ssids = 2;
-        let mut response = [0u8; 1024];
-
         match self
             .action_state
-            .issue(Action::Command((
-                command.kind(),
-                false,
-                sliceit(&command),
-                Some(&mut response[..]),
-            )))
+            .issue(Action::Command((command.domain(), false, sliceit(&command), None)))
             .await
         {
-            Ok(_) => (),
+            Ok(_) => Ok(()),
             Err(error) => {
                 error!("Failed to get stats: {:?}", error);
                 return Err(error);
             }
         }
+    }
 
-        Timer::after(Duration::from_millis(3000)).await;
-
+    pub async fn get_scan_results(&mut self) -> Result<(), Error> {
         let command = nrf_wifi_umac_cmd_get_scan_results::default();
+
+        let mut response = [0u8; 1024];
 
         match self
             .action_state
             .issue(Action::Command((
-                command.kind(),
-                false,
+                command.domain(),
+                true,
                 sliceit(&command),
                 Some(&mut response[..]),
             )))
@@ -137,46 +199,18 @@ impl<'a> Control<'a> {
             }
         }
 
-        // let command = nrf_wifi_umac_cmd_abort_scan::default();
-        //
-        // match self
-        //     .action_state
-        //     .issue(Action::Command((
-        //         command.kind(),
-        //         false,
-        //         sliceit(&command),
-        //         Some(&mut response[..]),
-        //     )))
-        //     .await
-        // {
-        //     Ok(response_length) => {
-        //         if let Some(length) = response_length {
-        //             info!("Got length {}", length);
-        //         }
-        //     }
-        //     Err(error) => {
-        //         error!("Failed to get stats: {:?}", error);
-        //         return Err(error);
-        //     }
-        // }
-
-        self.get_stats().await
+        Ok(())
     }
 
-    // pub async fn get_scan_results(&mut self) -> Result<(), Error> {
-    //     self.action_state.issue(Action::GetScanResults).await.map(|_| ())
-    // }
-
     pub async fn get_stats(&mut self) -> Result<(), Error> {
-        let mut command = nrf_wifi_cmd_get_stats::default();
-        command.fill();
+        let command = nrf_wifi_cmd_get_stats::default();
 
         let mut response = [0u8; 1024];
 
         match self
             .action_state
             .issue(Action::Command((
-                command.kind(),
+                command.domain(),
                 true,
                 sliceit(&command),
                 Some(&mut response[..]),

@@ -1,3 +1,5 @@
+use core::mem::transmute;
+
 use embassy_time::{Duration, Timer};
 use firmware::FirmwareInfo;
 
@@ -28,7 +30,7 @@ Each RX buffer has a "descriptor ID" which is assigned across all queues startin
 
 const MAX_TX_AGGREGATION: usize = 6;
 // const TX_MAX_DATA_SIZE: usize = 1600;
-const RX_MAX_DATA_SIZE: u16 = 1600;
+pub const RX_MAX_DATA_SIZE: usize = 1600;
 const RX_BUFS_PER_QUEUE: u16 = 5;
 
 // Fixed
@@ -39,9 +41,9 @@ const TX_BUF_SIZE: usize = TX_BUF_HEADROOM as usize + TX_MAX_DATA_SIZE;
 const TX_TOTAL_SIZE: usize = TX_BUFS * TX_BUF_SIZE;
 */
 
-const RX_BUFS: usize = (RX_BUFS_PER_QUEUE as usize) * (MAX_NUM_OF_RX_QUEUES as usize);
-const RX_BUF_SIZE: usize = RX_BUF_HEADROOM as usize + RX_MAX_DATA_SIZE as usize;
-const RX_TOTAL_SIZE: usize = RX_BUFS * RX_BUF_SIZE;
+pub const RX_BUFS: usize = (RX_BUFS_PER_QUEUE as usize) * (MAX_NUM_OF_RX_QUEUES as usize);
+pub const RX_BUF_SIZE: usize = RX_BUF_HEADROOM as usize + RX_MAX_DATA_SIZE as usize;
+pub const RX_TOTAL_SIZE: usize = RX_BUFS * RX_BUF_SIZE;
 
 //     // assert!(MAX_TX_TOKENS >= 1, "At least one TX token is required");
 //     // assert!(MAX_TX_AGGREGATION <= 16, "Max TX aggregation is 16");
@@ -104,6 +106,47 @@ pub struct Rpu<BUS: Bus> {
     tx_command_base_address: Option<u32>,
 
     num_commands: u32,
+
+    number_of_receive_queues: usize,
+    receive_queues: [ReceiveQueue; MAX_NUM_OF_RX_QUEUES as usize],
+}
+
+impl Default for ReceiveBuffer {
+    fn default() -> Self {
+        ReceiveBuffer {
+            rpu_address: 0,
+            descriptor_identifier: 0,
+            // TODO: maybe this can be 'static and provided by the user?
+            data: [0u8; RX_MAX_DATA_SIZE as usize],
+        }
+    }
+}
+
+struct ReceiveQueue {
+    number_of_buffers: usize,
+    buffers: [ReceiveBuffer; RX_BUFS_PER_QUEUE as usize],
+}
+
+impl Default for ReceiveQueue {
+    fn default() -> Self {
+        ReceiveQueue {
+            number_of_buffers: RX_BUFS_PER_QUEUE as usize,
+            buffers: [ReceiveBuffer::default(); RX_BUFS_PER_QUEUE as usize],
+        }
+    }
+}
+
+/// This buffer is a mapping to the receive buffers on the RPU
+#[derive(Copy, Clone)]
+struct ReceiveBuffer {
+    /// Points to the base of the receive buffer on the RPU
+    rpu_address: u32,
+
+    /// The descriptor identifier of this buffer
+    descriptor_identifier: usize,
+
+    /// This buffer does not include the 4 byte headroom where the descriptor identifier is placed
+    data: [u8; RX_MAX_DATA_SIZE],
 }
 
 #[allow(dead_code)]
@@ -118,6 +161,13 @@ impl<BUS: Bus> Rpu<BUS> {
             tx_command_base_address: None,
 
             num_commands: RPU_CMD_START_MAGIC,
+
+            number_of_receive_queues: 3,
+            receive_queues: [
+                ReceiveQueue::default(),
+                ReceiveQueue::default(),
+                ReceiveQueue::default(),
+            ],
         }
     }
 
@@ -166,7 +216,7 @@ impl<BUS: Bus> Rpu<BUS> {
 
         // -- Retrieve RF parameters ---
 
-        // DTS uses 1dBm as the unit for TX power, while the RPU uses 0.25dBm, so multiply by 4
+        // TODO: DTS uses 1dBm as the unit for TX power, while the RPU uses 0.25dBm, so multiply by 4
         let tx_pwr_ceil_params = nrf_wifi_tx_pwr_ceil_params {
             max_pwr_2g_dsss: 21 * 4,
             max_pwr_2g_mcs0: 16 * 4,
@@ -181,24 +231,32 @@ impl<BUS: Bus> Rpu<BUS> {
 
         let rf_parameters = self.get_rf_parameters(&umac_info, otp_flags, &tx_pwr_ceil_params).await;
 
-        // -- Initialize RX queues ---
+        // -- Initialize RX buffers ---
 
-        for queue_index in 0..(MAX_NUM_OF_RX_QUEUES as usize) {
-            for buffer_index in 0..RX_BUFS_PER_QUEUE {
-                let descriptor_identifier = queue_index * (RX_BUFS_PER_QUEUE as usize) + buffer_index as usize;
+        self.number_of_receive_queues = MAX_NUM_OF_RX_QUEUES as usize;
 
-                // TODO: Is this correct?
-                let rpu_addr = (RPU_MEM_PKT_BASE + RPU_PKTRAM_SIZE - RX_TOTAL_SIZE as u32)
+        for queue_index in 0..self.number_of_receive_queues {
+            self.receive_queues[queue_index].number_of_buffers = RX_BUFS_PER_QUEUE as usize;
+
+            for buffer_index in 0..self.receive_queues[queue_index].number_of_buffers {
+                let descriptor_identifier = queue_index * self.number_of_receive_queues + buffer_index as usize;
+                let rpu_address = (RPU_MEM_PKT_BASE + RPU_PKTRAM_SIZE - RX_TOTAL_SIZE as u32)
                     + (RX_BUF_SIZE * descriptor_identifier) as u32;
 
+                self.receive_queues[queue_index].buffers[buffer_index].descriptor_identifier = descriptor_identifier;
+                self.receive_queues[queue_index].buffers[buffer_index].rpu_address = rpu_address;
+
+                let command = host_rpu_rx_buf_info {
+                    addr: rpu_address + RX_BUF_HEADROOM,
+                };
+
+                let command_buffer: [u32; 1] = unsafe { transmute(command) };
+
                 // Write RX buffer header
-                self.write_u32(rpu_addr, None, descriptor_identifier as u32).await;
+                self.write_u32(rpu_address, None, descriptor_identifier as u32).await;
 
-                // Create host_rpu_rx_buf_info (it's just one word of the address)
-                let command = [rpu_addr + RX_BUF_HEADROOM];
-
-                // Call wifi_nrf_hal_data_cmd_send with the command
-                self.send_rx_command(&command, descriptor_identifier as u32, queue_index)
+                // TODO: does this need to be a function in itself or can it be inlined here?
+                self.send_rx_command(&command_buffer[..], descriptor_identifier as u32, queue_index)
                     .await?;
             }
         }
@@ -230,8 +288,6 @@ impl<BUS: Bus> Rpu<BUS> {
 
         // -- Read out and decode header ---
 
-        debug!("Fetching event from address: {:#x}", event_address);
-
         const HEADER_SIZE: usize = core::mem::size_of::<host_rpu_msg>();
         let mut header_buffer = [0; HEADER_SIZE];
 
@@ -251,6 +307,11 @@ impl<BUS: Bus> Rpu<BUS> {
         )
         .await;
 
+        debug!(
+            "Fetched event from address: {:#x}. Length: {}",
+            event_address, message_length
+        );
+
         if header.hdr.resubmit > 0 {
             self.free_event(event_address).await?;
         }
@@ -269,6 +330,51 @@ impl<BUS: Bus> Rpu<BUS> {
         }
 
         Ok(header)
+    }
+
+    fn descriptor_idenitfier_to_indicies(&self, descriptor_identiifer: usize) -> Result<(usize, usize), Error> {
+        for queue_index in 0..self.number_of_receive_queues {
+            for buffer_index in 0..self.receive_queues[queue_index].number_of_buffers {
+                if self.receive_queues[queue_index].buffers[buffer_index].descriptor_identifier == descriptor_identiifer
+                {
+                    return Ok((queue_index, buffer_index));
+                }
+            }
+        }
+
+        Err(Error::NotFound)
+    }
+
+    /// Fetches the receive buffer for the given descriptor and updates the local copy.
+    pub async fn update_cached_receive_buffer(
+        &mut self,
+        descriptor_identifier: usize,
+        size: usize,
+    ) -> Result<(), Error> {
+        let (queue_index, buffer_index) = self.descriptor_idenitfier_to_indicies(descriptor_identifier)?;
+
+        let mut data = [0u8; RX_MAX_DATA_SIZE];
+
+        let buffer = slice32_mut(&mut data);
+
+        self.read_buffer(
+            self.receive_queues[queue_index].buffers[buffer_index].rpu_address + RX_BUF_HEADROOM,
+            None,
+            &mut buffer[..(size + 3) / 4],
+        )
+        .await;
+
+        self.receive_queues[queue_index].buffers[buffer_index]
+            .data
+            .copy_from_slice(&data);
+
+        Ok(())
+    }
+
+    pub fn get_cached_receive_buffer_slice(&mut self, descriptor_identifier: usize) -> Result<&mut [u8], Error> {
+        let (queue_index, buffer_index) = self.descriptor_idenitfier_to_indicies(descriptor_identifier)?;
+
+        Ok(&mut self.receive_queues[queue_index].buffers[buffer_index].data)
     }
 
     pub async fn irq_ack(&mut self) {

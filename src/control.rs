@@ -1,13 +1,16 @@
-use core::ptr;
+use core::{mem::zeroed, ptr};
 
 use embassy_time::Duration;
 
 use crate::{
     action::{Action, Item},
     bindings::{
-        host_rpu_umac_info, nrf_wifi_cmd_get_stats, nrf_wifi_sys_umac_event_stats, nrf_wifi_umac_change_macaddr_info,
-        nrf_wifi_umac_cmd_change_macaddr, nrf_wifi_umac_cmd_chg_vif_state, nrf_wifi_umac_cmd_get_scan_results,
-        nrf_wifi_umac_cmd_scan, nrf_wifi_umac_hdr,
+        host_rpu_umac_info, nrf_wifi_cmd_get_stats, nrf_wifi_ps_state, nrf_wifi_sys_umac_event_stats,
+        nrf_wifi_umac_change_macaddr_info, nrf_wifi_umac_cmd_change_macaddr, nrf_wifi_umac_cmd_chg_sta,
+        nrf_wifi_umac_cmd_chg_vif_state, nrf_wifi_umac_cmd_get_scan_results, nrf_wifi_umac_cmd_mcast_filter,
+        nrf_wifi_umac_cmd_mgmt_frame_reg, nrf_wifi_umac_cmd_scan, nrf_wifi_umac_cmd_set_power_save,
+        nrf_wifi_umac_frame_match, nrf_wifi_umac_hdr, nrf_wifi_umac_mcast_cfg, nrf_wifi_umac_mgmt_frame_info,
+        nrf_wifi_umac_set_power_save_info, NRF_WIFI_CMD_SET_STATION_STA_FLAGS2_VALID,
     },
     rpu::commands::Command,
     util::sliceit,

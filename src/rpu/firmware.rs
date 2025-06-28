@@ -14,7 +14,7 @@ use crate::{
     Error,
 };
 
-use super::{ProcessorType, Rpu};
+use super::{ProcessorType, Rpu, RX_BUFS_PER_QUEUE};
 
 #[derive(Copy, Clone)]
 pub struct FirmwareImage<'a> {
@@ -261,15 +261,15 @@ impl<BUS: Bus> Rpu<BUS> {
             rx_buf_pools: [
                 rx_buf_pool_params {
                     buf_sz: RX_MAX_DATA_SIZE as _, // TODO is this including the header or not?
-                    num_bufs: 4 as _,
+                    num_bufs: RX_BUFS_PER_QUEUE as _,
                 },
                 rx_buf_pool_params {
                     buf_sz: RX_MAX_DATA_SIZE as _, // TODO is this including the header or not?
-                    num_bufs: 4 as _,
+                    num_bufs: RX_BUFS_PER_QUEUE as _,
                 },
                 rx_buf_pool_params {
                     buf_sz: RX_MAX_DATA_SIZE as _, // TODO is this including the header or not?
-                    num_bufs: 4 as _,
+                    num_bufs: RX_BUFS_PER_QUEUE as _,
                 },
             ],
             data_config_params: nrf_wifi_data_config_params {

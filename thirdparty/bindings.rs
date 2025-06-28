@@ -726,6 +726,46 @@ pub const MAX_SW_PEERS: u32 = 6;
 pub const NRF_WIFI_AC_TWT_PRIORITY_EMERGENCY: u32 = 255;
 pub const NRF_WIFI_MAGIC_NUM_RAWTX: u32 = 305419896;
 pub const RX_BUF_HEADROOM: u32 = 4;
+pub const NRF_WIFI_FMAC_ETH_ADDR_LEN: u32 = 6;
+pub const NRF_WIFI_FMAC_ETH_HDR_LEN: u32 = 14;
+pub const NRF_WIFI_FMAC_FTYPE_DATA: u32 = 8;
+pub const NRF_WIFI_FMAC_STYPE_DATA: u32 = 0;
+pub const NRF_WIFI_FMAC_STYPE_QOS_DATA: u32 = 128;
+pub const NRF_WIFI_FMAC_FCTL_FTYPE: u32 = 12;
+pub const NRF_WIFI_FMAC_FCTL_PROTECTED: u32 = 16384;
+pub const NRF_WIFI_FMAC_FCTL_TODS: u32 = 256;
+pub const NRF_WIFI_FMAC_FCTL_FROMDS: u32 = 512;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_WEP40: u32 = 1027073;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_WEP104: u32 = 1027077;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_TKIP: u32 = 1027074;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_CCMP: u32 = 1027076;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_CCMP_256: u32 = 1027082;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_OPEN: u32 = 0;
+pub const NRF_WIFI_FMAC_CIPHER_SUITE_SMS4: u32 = 1339905;
+pub const NRF_WIFI_FMAC_CCMP_HDR_LEN: u32 = 8;
+pub const NRF_WIFI_FMAC_CCMP_256_HDR_LEN: u32 = 8;
+pub const NRF_WIFI_FMAC_SMS4_HDR_LEN: u32 = 18;
+pub const NRF_WIFI_FMAC_WEP_IV_LEN: u32 = 4;
+pub const NRF_WIFI_FMAC_TKIP_IV_LEN: u32 = 8;
+pub const NRF_WIFI_FCTL_TODS: u32 = 256;
+pub const NRF_WIFI_FCTL_FROMDS: u32 = 512;
+pub const NRF_WIFI_FMAC_ETH_P_8021Q: u32 = 33024;
+pub const NRF_WIFI_FMAC_ETH_P_8021AD: u32 = 34984;
+pub const NRF_WIFI_FMAC_ETH_P_MPLS_UC: u32 = 34887;
+pub const NRF_WIFI_FMAC_ETH_P_MPLS_MC: u32 = 34888;
+pub const NRF_WIFI_FMAC_ETH_P_IP: u32 = 2048;
+pub const NRF_WIFI_FMAC_ETH_P_IPV6: u32 = 34525;
+pub const NRF_WIFI_FMAC_ETH_P_80221: u32 = 35095;
+pub const NRF_WIFI_FMAC_ETH_P_AARP: u32 = 33011;
+pub const NRF_WIFI_FMAC_ETH_P_IPX: u32 = 33079;
+pub const NRF_WIFI_FMAC_ETH_P_802_3_MIN: u32 = 1536;
+pub const NRF_WIFI_FMAC_VLAN_PRIO_SHIFT: u32 = 13;
+pub const NRF_WIFI_FMAC_VLAN_PRIO_MASK: u32 = 57344;
+pub const NRF_WIFI_FMAC_MPLS_LS_TC_MASK: u32 = 3584;
+pub const NRF_WIFI_FMAC_MPLS_LS_TC_SHIFT: u32 = 9;
+pub const NRF_WIFI_FMAC_IPV6_TOS_MASK: u32 = 4080;
+pub const NRF_WIFI_FMAC_IPV6_TOS_SHIFT: u32 = 4;
+pub const NRF_WIFI_FMAC_ETH_TYPE_MASK: u32 = 65535;
 pub const NRF_WIFI_PATCH_SIGNATURE: u32 = 3735887535;
 pub const NRF_WIFI_PATCH_HASH_LEN: u32 = 32;
 pub const NRF_WIFI_PATCH_NUM_IMAGES: u32 = 4;
@@ -5304,15 +5344,10 @@ pub struct nrf_wifi_cmd_ps_exit_strategy {
     #[doc = " Power save exit strategy"]
     pub ps_exit_strategy: ::core::ffi::c_uchar,
 }
-pub type wchar_t = ::core::ffi::c_uint;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct max_align_t {
-    pub __clang_max_align_nonce1: ::core::ffi::c_longlong,
-    pub __clang_max_align_nonce2: f64,
-}
-pub type __gnuc_va_list = u32;
-pub type va_list = u32;
+pub type wchar_t = ::core::ffi::c_int;
+pub type max_align_t = f64;
+pub type __gnuc_va_list = __builtin_va_list;
+pub type va_list = __builtin_va_list;
 #[repr(i32)]
 #[doc = " @brief The status of an operation performed by the RPU driver."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -6696,6 +6731,31 @@ pub struct nrf_wifi_fmac_rx_pool_map_info {
     pub pool_id: ::core::ffi::c_uint,
     pub buf_id: ::core::ffi::c_uint,
 }
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+pub struct nrf_wifi_fmac_ieee80211_hdr {
+    pub fc: ::core::ffi::c_ushort,
+    pub dur_id: ::core::ffi::c_ushort,
+    pub addr_1: [::core::ffi::c_uchar; 6usize],
+    pub addr_2: [::core::ffi::c_uchar; 6usize],
+    pub addr_3: [::core::ffi::c_uchar; 6usize],
+    pub seq_ctrl: ::core::ffi::c_ushort,
+    pub addr_4: [::core::ffi::c_uchar; 6usize],
+}
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+pub struct nrf_wifi_fmac_eth_hdr {
+    pub dst: [::core::ffi::c_uchar; 6usize],
+    pub src: [::core::ffi::c_uchar; 6usize],
+    pub proto: ::core::ffi::c_ushort,
+}
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone)]
+pub struct nrf_wifi_fmac_amsdu_hdr {
+    pub dst: [::core::ffi::c_uchar; 6usize],
+    pub src: [::core::ffi::c_uchar; 6usize],
+    pub length: ::core::ffi::c_ushort,
+}
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum nrf70_feature_flags {
@@ -6784,6 +6844,7 @@ pub enum nrf_wifi_fw_subtype {
     NRF_WIFI_FW_SUBTYPE_SEC = 1,
     NRF_WIFI_FW_SUBTYPE_MAX = 2,
 }
+pub type __builtin_va_list = *mut ::core::ffi::c_char;
 #[doc = " Frame context information."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

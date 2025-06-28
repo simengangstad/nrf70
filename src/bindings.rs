@@ -1190,6 +1190,7 @@ impl defmt::Format for nrf_wifi_umac_hdr {
     }
 }
 
+#[cfg(feature = "defmt")]
 impl defmt::Format for nrf_wifi_index_ids {
     fn format(&self, fmt: Formatter) {
         let valid_fields = self.valid_fields;
@@ -1206,6 +1207,174 @@ impl defmt::Format for nrf_wifi_index_ids {
             ifaceindex,
             nrf_wifi_wiphy_idx,
             wdev_id,
+        );
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_ssid {
+    fn format(&self, fmt: Formatter) {
+        let nrf_wifi_ssid_len = self.nrf_wifi_ssid_len;
+        let nrf_wifi_ssid = &self.nrf_wifi_ssid[..nrf_wifi_ssid_len as usize];
+
+        defmt::write!(
+            fmt,
+            "nrf_wifi_ssid {{ nrf_wifi_ssid_len: {}, nrf_wifi_ssid: {} }}",
+            nrf_wifi_ssid_len,
+            nrf_wifi_ssid,
+        );
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for umac_display_results {
+    fn format(&self, fmt: Formatter) {
+        let ssid = self.ssid;
+        let mac_addr = self.mac_addr;
+        let nwk_band = self.nwk_band;
+        let nwk_channel = self.nwk_channel;
+        let protocol_flags = self.protocol_flags;
+        let security_type = self.security_type;
+        let beacon_interval = self.beacon_interval;
+        let capability = self.capability;
+        let signal = self.signal;
+        let twt_support = self.twt_support;
+        let mfp_flag = self.mfp_flag;
+        let reserved3 = self.reserved3;
+        let reserved4 = self.reserved4;
+
+        defmt::write!(
+            fmt,
+            "umac_display_results {{ \
+ ssid: {}, \
+ mac_addr: [{}, {}, {}, {}, {}, {}], \
+ nwk_band: {}, \
+ nwk_channel: {}, \
+ protocol_flags: {}, \
+ security_type: {}, \
+ beacon_interval: {}, \
+ capability: {}, \
+ signal: {}, \
+ twt_support: {}, \
+ mfp_flag: {}, \
+ reserved3: {}, \
+ reserved4: {} \
+}}",
+            ssid,
+            mac_addr[0],
+            mac_addr[1],
+            mac_addr[2],
+            mac_addr[3],
+            mac_addr[4],
+            mac_addr[5],
+            nwk_band,
+            nwk_channel,
+            protocol_flags,
+            security_type,
+            beacon_interval,
+            capability,
+            signal,
+            twt_support,
+            mfp_flag,
+            reserved3,
+            reserved4,
+        );
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_signal__bindgen_ty_1 {
+    fn format(&self, fmt: Formatter) {
+        // Unions must be read unsafely
+        unsafe {
+            let mbm_signal = self.mbm_signal;
+            let unspec_signal = self.unspec_signal;
+            defmt::write!(fmt, "mbm_signal: {}, unspec_signal: {}", mbm_signal, unspec_signal);
+        }
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_signal {
+    fn format(&self, fmt: Formatter) {
+        // Bind each packed field to a local
+        let signal_type = self.signal_type;
+        let signal = self.signal;
+
+        defmt::write!(
+            fmt,
+            "nrf_wifi_signal {{ signal_type: {}, signal: {{ {} }} }}",
+            signal_type,
+            signal
+        );
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for nrf_wifi_umac_event_new_scan_results {
+    fn format(&self, fmt: Formatter) {
+        // Bind each packed field to a local variable
+        let umac_hdr = self.umac_hdr;
+        let valid_fields = self.valid_fields;
+        let generation = self.generation;
+        let frequency = self.frequency;
+        let chan_width = self.chan_width;
+        let seen_ms_ago = self.seen_ms_ago;
+        let nrf_wifi_flags = self.nrf_wifi_flags;
+        let status = self.status;
+        let ies_tsf = self.ies_tsf;
+        let beacon_ies_tsf = self.beacon_ies_tsf;
+        let beacon_interval = self.beacon_interval;
+        let capability = self.capability;
+        let signal = self.signal;
+        let mac_addr = self.mac_addr;
+        let ies_len = self.ies_len;
+        let beacon_ies_len = self.beacon_ies_len;
+        // Note: `ies` is a trailing incomplete array — contents not directly printable here.
+
+        defmt::write!(
+            fmt,
+            "nrf_wifi_umac_event_new_scan_results {{ \
+ umac_hdr: {}, \
+ valid_fields: {}, \
+ generation: {}, \
+ frequency: {}, \
+ chan_width: {}, \
+ seen_ms_ago: {}, \
+ nrf_wifi_flags: {}, \
+ status: {}, \
+ ies_tsf: {}, \
+ beacon_ies_tsf: {}, \
+ beacon_interval: {}, \
+ capability: {}, \
+ signal: {}, \
+ mac_addr: [{}, {}, {}, {}, {}, {}], \
+ ies_len: {}, \
+ beacon_ies_len: {}, \
+ ies: <{} bytes trailing> \
+}}",
+            umac_hdr,
+            valid_fields,
+            generation,
+            frequency,
+            chan_width,
+            seen_ms_ago,
+            nrf_wifi_flags,
+            status,
+            ies_tsf,
+            beacon_ies_tsf,
+            beacon_interval,
+            capability,
+            signal,
+            mac_addr[0],
+            mac_addr[1],
+            mac_addr[2],
+            mac_addr[3],
+            mac_addr[4],
+            mac_addr[5],
+            ies_len,
+            beacon_ies_len,
+            ies_len + beacon_ies_len
         );
     }
 }

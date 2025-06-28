@@ -15,6 +15,7 @@ use embassy_nrf::{bind_interrupts, spim};
 use embassy_time::{Delay, Duration, Timer};
 use embedded_hal_bus::spi::ExclusiveDevice;
 use nrf70::bus::SpiBus;
+use nrf70::control::{ScanOptions, ScanType};
 use static_cell::StaticCell;
 use {embassy_nrf as _, panic_probe as _};
 
@@ -26,6 +27,11 @@ type Nrf70SpiBus = SpiBus<ExclusiveDevice<Spim<'static, SERIAL0>, Output<'static
 
 #[embassy_executor::task]
 async fn nrf70_task(mut runner: nrf70::Runner<'static, Nrf70SpiBus, Input<'static>, Output<'static>>) -> ! {
+    runner.run().await
+}
+
+#[embassy_executor::task]
+async fn net_task(mut runner: embassy_net::Runner<'static, nrf70::NetDriver<'static>>) -> ! {
     runner.run().await
 }
 
@@ -59,19 +65,6 @@ async fn main(spawner: Spawner) {
     let spi = ExclusiveDevice::new(spim, cs, Delay).unwrap();
     let bus = SpiBus::new(spi);
 
-    /*
-    // QSPI is not working well yet.
-    let mut config = qspi::Config::default();
-    config.read_opcode = qspi::ReadOpcode::READ4IO;
-    config.write_opcode = qspi::WriteOpcode::PP4IO;
-    config.write_page_size = qspi::WritePageSize::_256BYTES;
-    config.frequency = qspi::Frequency::M8; // NOTE: Waking RPU works reliably only with lowest frequency (8MHz)
-
-    let irq = interrupt::take!(QSPI);
-    let qspi: qspi::Qspi<_> = qspi::Qspi::new(p.QSPI, irq, sck, csn, dio0, dio1, dio2, dio3, config);
-    let bus = QspiBus { qspi };
-    */
-
     static STATE: StaticCell<nrf70::State> = StaticCell::new();
     let state = STATE.init(nrf70::State::new());
 
@@ -83,10 +76,14 @@ async fn main(spawner: Spawner) {
         Err(error) => error!("Failed to initialize {:?}", error),
     };
 
-    // match control.get_stats().await {
-    //     Ok(()) => info!("Requested stats"),
-    //     Err(error) => error!("Failed to request stats {}", error),
-    // }
+    let mut scan_options = ScanOptions::default();
+    scan_options.scan_type = ScanType::Active;
+    scan_options.dwell_time = Some(Duration::from_millis(300));
+
+    match control.scan(scan_options).await {
+        Ok(()) => info!("Requested scan..."),
+        Err(error) => error!("Failed to perform scan {}", error),
+    }
 
     let mut led = Output::new(p.P1_06.degrade(), Level::High, OutputDrive::Standard);
     loop {

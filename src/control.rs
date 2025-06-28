@@ -133,9 +133,158 @@ impl<'a> Control<'a> {
         // let result = self.read_u32_from_region(SYSBUS, 0x0C0).await;
         // info!("PART: {}", result);
 
-        // --- Set mcast address ---
-        // TODO
+        // TODO: pass in as a config?
+        const POWER_SAVE_ENABLED: bool = false;
 
+        let mut command = nrf_wifi_umac_cmd_set_power_save {
+            umac_hdr: nrf_wifi_umac_hdr::default(),
+            info: nrf_wifi_umac_set_power_save_info {
+                ps_state: if POWER_SAVE_ENABLED {
+                    nrf_wifi_ps_state::NRF_WIFI_PS_ENABLED as i32
+                } else {
+                    nrf_wifi_ps_state::NRF_WIFI_PS_DISABLED as i32
+                },
+            },
+        };
+        command.prepare();
+
+        match self
+            .action_state
+            .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
+            .await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                error!("Failed to set power save: {:?}", err);
+                return Err(err);
+            }
+        }
+
+        // --- Set mcast address ---
+
+        /*
+                TODO: should this be set another way?
+                static const struct in_addr all_systems = { { { 224, 0, 0, 1 } } };
+                static const struct in_addr all_routers = { { { 224, 0, 0, 2 } } };
+                mac_addr->addr[0] = 0x01;
+                mac_addr->addr[1] = 0x00;
+                mac_addr->addr[2] = 0x5e;
+                mac_addr->addr[3] = ipv4_addr->s4_addr[1];
+                mac_addr->addr[4] = ipv4_addr->s4_addr[2];
+                mac_addr->addr[5] = ipv4_addr->s4_addr[3];
+
+                mac_addr->addr[3] &= 0x7f;
+        */
+        let multicast_mac_address = [0x01, 0x00, 0x5e, 0x00, 0x00, 0x01];
+
+        let mut command = nrf_wifi_umac_cmd_mcast_filter {
+            umac_hdr: nrf_wifi_umac_hdr::default(),
+            info: nrf_wifi_umac_mcast_cfg {
+                type_: 0,
+                mac_addr: multicast_mac_address,
+            },
+        };
+        command.prepare();
+
+        match self
+            .action_state
+            .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
+            .await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                error!("Failed to set multicast address: {:?}", err);
+                return Err(err);
+            }
+        };
+
+        // --- Register frame ---
+
+        /* WNM - BSS Transition Management Request */
+        /* Radio Measurement - Neighbor Report Response */
+        /* Radio Measurement - Radio Measurement Request */
+        let frames: [[u8; 2]; 3] = [[0x0a, 0x07], [0x05, 0x05], [0x05, 0x00]];
+        const WLAN_FC_TYPE_MGMT: u16 = 0;
+        const WLAN_FC_TYPE_CTRL: u16 = 1;
+        const WLAN_FC_TYPE_DATA: u16 = 2;
+
+        const WLAN_FC_STYPE_ACTION: u16 = 13;
+
+        for frame in frames {
+            let mut command = nrf_wifi_umac_cmd_mgmt_frame_reg {
+                umac_hdr: nrf_wifi_umac_hdr::default(),
+                info: nrf_wifi_umac_mgmt_frame_info {
+                    frame_type: (WLAN_FC_TYPE_MGMT << 2) | (WLAN_FC_STYPE_ACTION << 4),
+                    frame_match: nrf_wifi_umac_frame_match {
+                        frame_match_len: frame.len() as u32,
+                        frame_match: unsafe { zeroed() },
+                    },
+                },
+            };
+
+            command.info.frame_match.frame_match[0..frame.len()].copy_from_slice(&frame);
+
+            command.prepare();
+
+            match self
+                .action_state
+                .issue(Action::Command((command.domain(), false, sliceit(&command), None)))
+                .await
+            {
+                Ok(_) => {}
+                Err(err) => {
+                    error!("Failed to register frame: {:?}", err);
+                    return Err(err);
+                }
+            };
+        }
+
+        // --- Get wiphy ---
+        //
+        // TODO: need to handle large messages for this
+        //
+        // let mut command = nrf_wifi_cmd_get_wiphy {
+        //     umac_hdr: nrf_wifi_umac_hdr::default(),
+        // };
+        // command.prepare();
+        //
+        // match self
+        //     .action_state
+        //     .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
+        //     .await
+        // {
+        //     Ok(_) => {}
+        //     Err(err) => {
+        //         error!("Failed to register frame: {:?}", err);
+        //         return Err(err);
+        //     }
+        // };
+
+        // --- Delete 6 keys ---
+        //
+        // TOOD: Unsure of which here or if this is just clearing some keys
+        // Command 7
+
+        // --- Update station entry ---
+        let mut command = nrf_wifi_umac_cmd_chg_sta {
+            umac_hdr: nrf_wifi_umac_hdr::default(),
+            valid_fields: NRF_WIFI_CMD_SET_STATION_STA_FLAGS2_VALID,
+            info: unsafe { zeroed() },
+        };
+
+        command.prepare();
+
+        match self
+            .action_state
+            .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
+            .await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                error!("Failed to update station entry: {:?}", err);
+                return Err(err);
+            }
+        };
         Ok(())
     }
 
@@ -163,9 +312,11 @@ impl<'a> Control<'a> {
             command.info.scan_params.mac_addr = bssid;
         }
 
+        command.info.scan_params.num_scan_channels = 20;
+
         match self
             .action_state
-            .issue(Action::Command((command.domain(), false, sliceit(&command), None)))
+            .issue(Action::Command((command.domain(), true, sliceit(&command), None)))
             .await
         {
             Ok(_) => Ok(()),
@@ -174,6 +325,9 @@ impl<'a> Control<'a> {
                 return Err(error);
             }
         }
+
+        // TODO: wait for scan done? Weird that the Zephyr samples receives that event
+        // but this does not for some reason...
     }
 
     pub async fn get_scan_results(&mut self) -> Result<(), Error> {
